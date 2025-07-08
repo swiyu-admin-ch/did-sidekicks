@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::errors::TrustDidWebError;
+use crate::errors::DidSidekicksError;
 use serde::{Deserialize, Serialize};
 
 /// An entry in DID log file as shown here
@@ -196,7 +196,7 @@ pub struct DidDocNormalized {
 }
 
 impl DidDocNormalized {
-    pub fn to_did_doc(&self) -> Result<DidDoc, TrustDidWebError> {
+    pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
         let controller = match self.controller.clone() {
             None => vec![],
             Some(c) => vec![c],
@@ -217,62 +217,62 @@ impl DidDocNormalized {
         };
         if !self.authentication.is_empty() {
             did_doc.authentication = vec![];
-            self.authentication.iter().try_for_each(|id| -> Result<(), TrustDidWebError> {
+            self.authentication.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
                 match self.verification_method.iter().find(|m| m.id == *id) {
                     Some(obj) => {
                         did_doc.authentication.push(obj.clone());
                         Ok(())
                     }
-                    None => Err(TrustDidWebError::InvalidDidDocument(format!("Authentication (reference) key refers to non-existing verification method: {id}")))
+                    None => Err(DidSidekicksError::InvalidDidDocument(format!("Authentication (reference) key refers to non-existing verification method: {id}")))
                 }
             })?;
         }
         if !self.capability_invocation.is_empty() {
             did_doc.capability_invocation = vec![];
-            self.capability_invocation.iter().try_for_each(|id| -> Result<(), TrustDidWebError> {
+            self.capability_invocation.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
                 match self.verification_method.iter().find(|m| m.id == *id) {
                     Some(obj) => {
                         did_doc.capability_invocation.push(obj.clone());
                         Ok(())
                     }
-                    None => Err(TrustDidWebError::InvalidDidDocument(format!("Capability invocation (reference) key refers to non-existing verification method: {id}")))
+                    None => Err(DidSidekicksError::InvalidDidDocument(format!("Capability invocation (reference) key refers to non-existing verification method: {id}")))
                 }
             })?;
         }
         if !self.capability_delegation.is_empty() {
             did_doc.capability_delegation = vec![];
-            self.capability_delegation.iter().try_for_each(|id| -> Result<(), TrustDidWebError> {
+            self.capability_delegation.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
                 match self.verification_method.iter().find(|m| m.id == *id) {
                     Some(obj) => {
                         did_doc.capability_delegation.push(obj.clone());
                         Ok(())
                     }
-                    None => Err(TrustDidWebError::InvalidDidDocument(format!("Capability delegation (reference) key refers to non-existing verification method: {id}")))
+                    None => Err(DidSidekicksError::InvalidDidDocument(format!("Capability delegation (reference) key refers to non-existing verification method: {id}")))
                 }
             })?;
         }
         if !self.assertion_method.is_empty() {
             did_doc.assertion_method = vec![];
-            self.assertion_method.iter().try_for_each(|id| -> Result<(), TrustDidWebError> {
+            self.assertion_method.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
                 match self.verification_method.iter().find(|m| m.id == *id)
                 {
                     Some(obj) => {
                         did_doc.assertion_method.push(obj.clone());
                         Ok(())
                     }
-                    None => Err(TrustDidWebError::InvalidDidDocument(format!("Assertion method (reference) key refers to non-existing verification method: {id}")))
+                    None => Err(DidSidekicksError::InvalidDidDocument(format!("Assertion method (reference) key refers to non-existing verification method: {id}")))
                 }
             })?;
         }
         if !self.key_agreement.is_empty() {
             did_doc.key_agreement = vec![];
-            self.key_agreement.iter().try_for_each(|id| -> Result<(), TrustDidWebError> {
+            self.key_agreement.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
                 match self.verification_method.iter().find(|m| m.id == *id) {
                     Some(obj) => {
                         did_doc.key_agreement.push(obj.clone());
                         Ok(())
                     }
-                    None => Err(TrustDidWebError::InvalidDidDocument(format!("Key agreement (reference) key refers to non-existing verification method: {id}")))
+                    None => Err(DidSidekicksError::InvalidDidDocument(format!("Key agreement (reference) key refers to non-existing verification method: {id}")))
                 }
             })?;
         }
@@ -317,11 +317,11 @@ impl DidDoc {
         self.deactivated.unwrap_or(false)
     }
 
-    pub fn from_json(json_content: &str) -> Result<Self, TrustDidWebError> {
+    pub fn from_json(json_content: &str) -> Result<Self, DidSidekicksError> {
         let did_doc: DidDoc = match serde_json::from_str(json_content) {
             Ok(did_doc) => did_doc,
             Err(err) => {
-                return Err(TrustDidWebError::DeserializationFailed(format!(
+                return Err(DidSidekicksError::DeserializationFailed(format!(
                     "Error parsing DID Document. Make sure the content is correct -> {err}"
                 )));
             }

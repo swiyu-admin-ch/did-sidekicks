@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::errors::TrustDidWebError;
+use crate::errors::DidSidekicksError;
 use bs58::{decode as base58_decode, encode as base58_encode, Alphabet as Alphabet58};
 use std::cmp::PartialEq;
 
@@ -55,14 +55,14 @@ impl MultibaseEncoderDecoder {
         &self,
         multibase: &str,
         result: &mut [u8],
-    ) -> Result<(), TrustDidWebError> {
+    ) -> Result<(), DidSidekicksError> {
         // sanity guard
         if self.algorithm != MultibaseAlgorithm::Base58btc {
             panic!("Unsupported multibase algorithm {:?}", self.algorithm);
         }
 
         if !multibase.starts_with(BASE58BTC_MULTIBASE_IDENTIFIER) {
-            return Err(TrustDidWebError::DeserializationFailed(format!(
+            return Err(DidSidekicksError::DeserializationFailed(format!(
                 "Invalid multibase algorithm identifier '{:?}'",
                 self.algorithm
             )));
@@ -73,7 +73,7 @@ impl MultibaseEncoderDecoder {
         // decode into the given buffer
         match base58_decode(raw).with_alphabet(self.alphabet).onto(result) {
             Ok(_) => Ok(()),
-            Err(err) => Err(TrustDidWebError::DeserializationFailed(format!("{err}"))),
+            Err(err) => Err(DidSidekicksError::DeserializationFailed(format!("{err}"))),
         }
     }
 }
