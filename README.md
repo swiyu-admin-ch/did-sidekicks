@@ -29,10 +29,7 @@ The library can be used directly in rust by adding the following dependency to y
 ````toml
 [dependencies]
 # Alternatively, feel free to so use tag=<ANY_EXISTING_VERSION> instead of branch="main"
-did_sidekicks = { git = "https://github.com/swiyu-admin-ch/did-sidekicks.git", tag = "main" }
-
-# Optional: For manipulating the json content in the example
-serde_json = "1.0.133"
+did_sidekicks = { git = "https://github.com/swiyu-admin-ch/did-sidekicks.git", branch = "main" }
 ````
 
 ## License
