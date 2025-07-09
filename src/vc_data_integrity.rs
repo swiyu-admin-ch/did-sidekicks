@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::ed25519::*;
-use crate::errors::TrustDidWebError;
+use crate::errors::DidSidekicksError;
 use crate::jcs_sha256_hasher::JcsSha256Hasher;
 use chrono::{serde::ts_seconds, DateTime, SecondsFormat, Utc};
 use hex;
@@ -120,11 +120,11 @@ pub struct DataIntegrityProof {
 }
 impl DataIntegrityProof {
     /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
-    pub fn from(json: String) -> Result<Self, TrustDidWebError> {
+    pub fn from(json: String) -> Result<Self, DidSidekicksError> {
         let value = match serde_json::from_str(&json) {
             Ok(JsonArray(entry)) => {
                 if entry.len() > 1 {
-                    return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "A single proof is currently supported.".to_string(),
                     ));
                 }
@@ -132,20 +132,19 @@ impl DataIntegrityProof {
                 match entry.first() {
                     Some(first) => first.clone(),
                     None => {
-                        return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Empty proof array detected.".to_string(),
                         ))
                     }
                 }
             }
-            Err(e) => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
-                    "Malformed proof format, expected single-element JSON array: {}",
-                    e
+            Err(err) => {
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                    "Malformed proof format, expected single-element JSON array: {err}"
                 )))
             }
             _ => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Malformed proof format, expected single-element JSON array".to_string(),
                 ))
             }
@@ -154,14 +153,14 @@ impl DataIntegrityProof {
             proof_type: match value["type"] {
                 JsonString(ref s) => {
                     if s != "DataIntegrityProof" {
-                        return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Unsupported proof's type. Expected 'DataIntegrityProof'".to_string(),
                         ));
                     }
                     s.to_string()
                 }
                 _ => {
-                    return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "Missing proof's type".to_string(),
                     ))
                 }
@@ -169,7 +168,7 @@ impl DataIntegrityProof {
             crypto_suite: match value["cryptosuite"] {
                 JsonString(ref s) => {
                     if s != CryptoSuiteType::EddsaJcs2022.to_string().deref() {
-                        return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
+                        return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
                             "Unsupported proof's cryptosuite. Expected '{}'",
                             CryptoSuiteType::EddsaJcs2022
                         )));
@@ -177,7 +176,7 @@ impl DataIntegrityProof {
                     s.to_string()
                 }
                 _ => {
-                    return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "Missing proof's cryptosuite".to_string(),
                     ))
                 }
@@ -186,18 +185,18 @@ impl DataIntegrityProof {
             created: match value["created"] {
                 JsonString(ref s) => match DateTime::parse_from_rfc3339(s) {
                     Ok(date) => date.to_utc(),
-                    Err(err) => return Err(TrustDidWebError::InvalidDataIntegrityProof(
-                        format!("Invalid proof's creation datetime format: {}", err),
+                    Err(err) => return Err(DidSidekicksError::InvalidDataIntegrityProof(
+                        format!("Invalid proof's creation datetime format: {err}"),
                     ))
                 },
-                _ =>  return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                _ =>  return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Missing proof's creation datetime.".to_string(),
                 )),
             },
             verification_method: match value["verificationMethod"] {
                 JsonString(ref s) => {
                     if !s.starts_with("did:key:") {
-                        return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Unsupported proof's verificationMethod. Expected prefix 'did:key:'"
                                 .to_string(),
                         ));
@@ -205,7 +204,7 @@ impl DataIntegrityProof {
                     s.to_string()
                 }
                 _ => {
-                    return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "Missing proof's verificationMethod".to_string(),
                     ))
                 }
@@ -213,7 +212,7 @@ impl DataIntegrityProof {
             proof_purpose: match value["proofPurpose"] {
                 JsonString(ref s) => {
                     if s != "authentication" && s != "assertionMethod" {
-                        return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                        return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Unsupported proof's proofPurpose. Expected 'authentication'"
                                 .to_string(),
                         ));
@@ -221,7 +220,7 @@ impl DataIntegrityProof {
                     s.to_string()
                 }
                 _ => {
-                    return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "Missing proof's proofPurpose".to_string(),
                     ))
                 }
@@ -235,7 +234,7 @@ impl DataIntegrityProof {
                                     acc.push(s);
                                     Ok(acc)
                                 }
-                                _ => Err(TrustDidWebError::InvalidDataIntegrityProof(
+                                _ => Err(DidSidekicksError::InvalidDataIntegrityProof(
                                     "Invalid type of 'context' entry, expected a string."
                                         .to_string(),
                                 )),
@@ -243,25 +242,25 @@ impl DataIntegrityProof {
                     )
                 }
                 JsonNull => None,
-                _ => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Invalid format of 'context' entry, expected array of strings.".to_string(),
                 )),
             },
             challenge: match value["challenge"] {
                 JsonString(ref s) => s.to_string(),
-                JsonNull => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                JsonNull => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Missing proof's challenge parameter. Expected a challenge of type string.".to_string(),
                 )),
-                _ => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_string(),
                 ))
             },
             proof_value: match value["proofValue"] {
                 JsonString(ref s) => s.to_string(),
-                JsonNull => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                JsonNull => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Missing proofValue parameter. Expected a proofValue of type string.".to_string(),
                 )),
-                _ => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Wrong format of proofValue parameter. Expected a proofValue of type string.".to_string(),
                 ))
             },
@@ -269,13 +268,12 @@ impl DataIntegrityProof {
     }
 
     /// Construct a serde_json::Value from this DataIntegrityProof
-    pub fn json_value(&self) -> Result<serde_json::Value, TrustDidWebError> {
+    pub fn json_value(&self) -> Result<serde_json::Value, DidSidekicksError> {
         let mut value = match serde_json::to_value(self) {
             Ok(v) => v,
             Err(err) => {
-                return Err(TrustDidWebError::SerializationFailed(format!(
-                    "Could not serialize proof:{}",
-                    err
+                return Err(DidSidekicksError::SerializationFailed(format!(
+                    "Could not serialize proof: {err}"
                 )))
             }
         };
@@ -289,18 +287,18 @@ impl DataIntegrityProof {
     }
 
     /// Delivers first available update key
-    pub fn extract_update_key(&self) -> Result<String, TrustDidWebError> {
+    pub fn extract_update_key(&self) -> Result<String, DidSidekicksError> {
         if self.verification_method.starts_with("did:key:") {
             let hash_separated = self.verification_method.to_owned().replace("did:key:", "");
             let update_key_split = hash_separated.split('#').collect::<Vec<&str>>();
             if update_key_split.is_empty() {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "A proof's verificationMethod must be #-delimited".to_string(),
                 ));
             }
             Ok(update_key_split[0].to_string())
         } else {
-            Err(TrustDidWebError::InvalidDataIntegrityProof(
+            Err(DidSidekicksError::InvalidDataIntegrityProof(
                 format!("Unsupported proof's verificationMethod (only 'did:key' is currently supported): {}", self.verification_method)
             ))
         }
@@ -340,13 +338,13 @@ pub trait VCDataIntegrity {
         &self,
         unsecured_document: &serde_json::Value,
         options: &CryptoSuiteProofOptions,
-    ) -> Result<serde_json::Value, TrustDidWebError>;
+    ) -> Result<serde_json::Value, DidSidekicksError>;
     // See https://www.w3.org/TR/vc-data-integrity/#verify-proof
     fn verify_proof(
         &self,
         proof: &DataIntegrityProof,
         doc_hash: &str,
-    ) -> Result<(), TrustDidWebError>;
+    ) -> Result<(), DidSidekicksError>;
 }
 
 pub struct EddsaJcs2022Cryptosuite {
@@ -361,18 +359,18 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         &self,
         unsecured_document: &serde_json::Value,
         options: &CryptoSuiteProofOptions,
-    ) -> Result<serde_json::Value, TrustDidWebError> {
+    ) -> Result<serde_json::Value, DidSidekicksError> {
         // According to https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022:
         // If proofConfig.type is not set to DataIntegrityProof or proofConfig.cryptosuite is not set to eddsa-jcs-2022,
         // an error MUST be raised that SHOULD convey an error type of PROOF_GENERATION_ERROR.
         if !matches!(options.crypto_suite, CryptoSuiteType::EddsaJcs2022) {
-            return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
+            return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
                 "Unsupported proof's cryptosuite. Only '{}' is supported",
                 CryptoSuiteType::EddsaJcs2022
             )));
         }
         if options.proof_type != "DataIntegrityProof" {
-            return Err(TrustDidWebError::InvalidDataIntegrityProof(
+            return Err(DidSidekicksError::InvalidDataIntegrityProof(
                 "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_string(),
             ));
         }
@@ -400,18 +398,16 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         let proof_hash = match JcsSha256Hasher::default().encode_hex(&proof_without_proof_value) {
             Ok(proof_hash) => proof_hash,
             Err(err) => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize proof: {}",
-                    err
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                    "Could not serialize proof: {err}"
                 )))
             }
         };
         let doc_hash = match JcsSha256Hasher::default().encode_hex(unsecured_document) {
             Ok(doc_hash) => doc_hash,
             Err(err) => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize document for hash generation: {}",
-                    err
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                    "Could not serialize document for hash generation: {err}"
                 )))
             }
         };
@@ -420,16 +416,15 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         let decoded_hex_data = match hex::decode(hash_data) {
             Ok(hex_data) => hex_data,
             Err(err) => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
-                    "Unable to decode created hash: {}",
-                    err
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                    "Unable to decode created hash: {err}"
                 )))
             }
         };
 
         let signature = match &self.signing_key {
             Some(signing_key) => signing_key.sign_bytes(decoded_hex_data.deref()),
-            None => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+            None => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                 "Invalid eddsa cryptosuite. Signing key is missing but required for proof creation"
                     .to_string(),
             )),
@@ -450,7 +445,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         &self,
         proof: &DataIntegrityProof,
         doc_hash: &str,
-    ) -> Result<(), TrustDidWebError> {
+    ) -> Result<(), DidSidekicksError> {
         let proof_value = &proof.proof_value;
 
         let created = proof
@@ -477,9 +472,8 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         let proof_hash = match JcsSha256Hasher::default().encode_hex(&proof_without_proof_value) {
             Ok(proof_hash) => proof_hash,
             Err(err) => {
-                return Err(TrustDidWebError::InvalidDataIntegrityProof(format!(
-                    "Could not serialize proof: {}",
-                    err
+                return Err(DidSidekicksError::InvalidDataIntegrityProof(format!(
+                    "Could not serialize proof: {err}"
                 )))
             }
         };
@@ -489,16 +483,16 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             Some(ref verifying_key) => {
                 let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(hash_data) {
                     Ok(decoded_hash) => decoded_hash,
-                    Err(_) => return Err(TrustDidWebError::InvalidDataIntegrityProof(
+                    Err(_) => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                         "Cannot decode hash value from hex.".to_string()
                     ))
                 };
                 // Strictly verify a signature on a message with this keypair's public key.
                 // It may respond with: "signature error: Verification equation was not satisfied"
                 verifying_key.verifying_key.verify_strict(&hash_data_decoded, &signature.signature)
-                    .map_err(|err| TrustDidWebError::InvalidDataIntegrityProof(format!("{}", err)))
+                    .map_err(|err| DidSidekicksError::InvalidDataIntegrityProof(format!("{err}")))
             }
-            None => Err(TrustDidWebError::InvalidDataIntegrityProof(
+            None => Err(DidSidekicksError::InvalidDataIntegrityProof(
                 "Invalid eddsa cryptosuite. Verifying key is missing but required for proof verification".to_string()
             ))
         }
@@ -507,7 +501,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
 
 #[cfg(test)]
 mod test {
-    use crate::errors::TrustDidWebErrorKind;
+    use crate::errors::DidSidekicksErrorKind;
     use crate::test::assert_trust_did_web_error;
     use crate::vc_data_integrity::DataIntegrityProof;
     use rstest::rstest;
@@ -571,7 +565,7 @@ mod test {
     ) -> Result<(), Box<dyn std::error::Error>> {
         assert_trust_did_web_error(
             DataIntegrityProof::from(input_str),
-            TrustDidWebErrorKind::InvalidIntegrityProof,
+            DidSidekicksErrorKind::InvalidIntegrityProof,
             error_string,
         );
 

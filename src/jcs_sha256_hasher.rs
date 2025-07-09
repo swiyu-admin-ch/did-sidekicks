@@ -18,7 +18,7 @@ pub struct JcsSha256Hasher {
 }
 impl JcsSha256Hasher {
     /// The default constructor featuring a SHA2-256 hasher instance.
-    pub(crate) fn default() -> Self {
+    pub fn default() -> Self {
         JcsSha256Hasher {
             hasher: Sha256::new(),
         }
