@@ -22,14 +22,6 @@ pub struct MultibaseEncoderDecoder {
 }
 
 impl MultibaseEncoderDecoder {
-    /// The default constructor featuring Base58btc algorithm.
-    pub(crate) fn default() -> Self {
-        MultibaseEncoderDecoder {
-            algorithm: MultibaseAlgorithm::Base58btc,
-            alphabet: Alphabet58::BITCOIN,
-        }
-    }
-
     /// Encode bytes into a new owned string using the alphabet supplied earlier.
     pub fn encode_base58btc(&self, data: &[u8]) -> String {
         // sanity guard
@@ -74,6 +66,16 @@ impl MultibaseEncoderDecoder {
         match base58_decode(raw).with_alphabet(self.alphabet).onto(result) {
             Ok(_) => Ok(()),
             Err(err) => Err(DidSidekicksError::DeserializationFailed(format!("{err}"))),
+        }
+    }
+}
+
+impl Default for MultibaseEncoderDecoder {
+    /// Default constructor featuring Base58btc algorithm.
+    fn default() -> Self {
+        Self {
+            algorithm: MultibaseAlgorithm::Base58btc,
+            alphabet: Alphabet58::BITCOIN,
         }
     }
 }
