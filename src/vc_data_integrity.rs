@@ -100,23 +100,30 @@ impl CryptoSuiteProofOptions {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DataIntegrityProof {
     #[serde(rename = "type")]
-    pub proof_type: String,
+    proof_type: String,
+
     #[serde(rename = "cryptosuite")]
-    pub crypto_suite: String,
+    crypto_suite: String,
+
     #[serde(skip)]
-    pub crypto_suite_type: Option<CryptoSuiteType>,
+    crypto_suite_type: Option<CryptoSuiteType>,
+
     #[serde(with = "ts_seconds")]
     // with = "ts_seconds" requires (in Cargo.toml):
     // chrono = { version = "0.4.39", features = ["serde"] }
-    pub created: DateTime<Utc>,
+    created: DateTime<Utc>,
+
     #[serde(rename = "verificationMethod")]
-    pub verification_method: String,
+    verification_method: String,
+
     #[serde(rename = "proofPurpose")]
-    pub proof_purpose: String,
-    pub context: Option<Vec<String>>,
-    pub challenge: String,
+    proof_purpose: String,
+
+    context: Option<Vec<String>>,
+    challenge: String,
+
     #[serde(rename = "proofValue")]
-    pub proof_value: String,
+    proof_value: String,
 }
 impl DataIntegrityProof {
     /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
@@ -213,7 +220,7 @@ impl DataIntegrityProof {
                 JsonString(ref s) => {
                     if s != "authentication" && s != "assertionMethod" {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                            "Unsupported proof's proofPurpose. Expected 'authentication'"
+                            "Unsupported proof's proofPurpose. Expected 'authentication' or 'assertionMethod'"
                                 .to_string(),
                         ));
                     }
@@ -302,6 +309,14 @@ impl DataIntegrityProof {
                 format!("Unsupported proof's verificationMethod (only 'did:key' is currently supported): {}", self.verification_method)
             ))
         }
+    }
+
+    pub fn get_crypto_suite_type(&self) -> &Option<CryptoSuiteType> {
+        &self.crypto_suite_type
+    }
+
+    pub fn get_crypto_suite(&self) -> &String {
+        &self.crypto_suite
     }
 }
 
@@ -572,3 +587,4 @@ mod test {
         Ok(())
     }
 }
+
