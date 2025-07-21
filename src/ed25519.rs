@@ -21,6 +21,7 @@ pub trait MultiBaseConverter {
 pub struct Ed25519Signature {
     pub signature: Signature,
 }
+
 impl MultiBaseConverter for Ed25519Signature {
     fn to_multibase(&self) -> String {
         let signature_bytes = self.signature.to_bytes();
@@ -83,6 +84,7 @@ impl MultiBaseConverter for Ed25519SigningKey {
         })
     }
 }
+
 impl Ed25519SigningKey {
     pub fn new(signing_key: SigningKey) -> Self {
         Ed25519SigningKey { signing_key }
@@ -148,6 +150,7 @@ impl MultiBaseConverter for Ed25519VerifyingKey {
         }
     }
 }
+
 impl Ed25519VerifyingKey {
     pub fn new(verifying_key: VerifyingKey) -> Self {
         Ed25519VerifyingKey { verifying_key }

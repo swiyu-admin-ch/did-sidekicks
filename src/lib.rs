@@ -7,20 +7,20 @@
 
 extern crate core;
 
+pub mod custom_jsonschema_keywords;
 pub mod did_doc;
+pub mod did_jsonschema;
 pub mod ed25519;
 pub mod errors;
 pub mod jcs_sha256_hasher;
 pub mod multibase;
 pub mod vc_data_integrity;
-pub mod custom_jsonschema_keywords;
-pub mod did_jsonschema;
 
 // CAUTION All structs required by UniFFI bindings generator (declared in UDL) MUST also be "used" here
 use did_doc::*;
+use did_jsonschema::*;
 use ed25519::*;
 use errors::*;
-use did_jsonschema::*;
 
 uniffi::include_scaffolding!("did_sidekicks");
 
@@ -64,7 +64,6 @@ mod test {
         multibase.decode_base58_onto(encoded.as_str(), &mut buff)?;
         let decoded = String::from_utf8_lossy(&buff).to_string();
         assert!(decoded.starts_with("helloworld"));
-        //assert_eq!(decoded, "helloworld");
         Ok(())
     }
 
@@ -250,5 +249,4 @@ mod test {
 
         Ok(())
     }
-
 }

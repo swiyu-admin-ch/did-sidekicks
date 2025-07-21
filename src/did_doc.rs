@@ -13,38 +13,21 @@ use serde::{Deserialize, Serialize};
 pub struct Jwk {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kid: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kty: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub crv: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub x: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub y: Option<String>,
-}
-
-// See https://www.w3.org/TR/did-core/#verification-methods
-#[derive(Serialize, Deserialize, Debug)]
-pub struct VerificationMethod {
-    pub id: String,
-    // CAUTION The "controller" property must not be present w.r.t.:
-    // - https://jira.bit.admin.ch/browse/EIDSYS-352
-    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
-    // It is kept for the sake of backward compatibility only.
-    #[serde(skip_serializing_if = "String::is_empty", default)]
-    pub controller: String,
-    #[serde(rename = "type")]
-    pub verification_type: VerificationType,
-    // CAUTION The "publicKeyMultibase" property must not be present w.r.t.:
-    // - https://jira.bit.admin.ch/browse/EIDOMNI-35
-    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
-    // It is kept for the sake of backward compatibility only.
-    #[serde(rename = "publicKeyMultibase", skip_serializing_if = "Option::is_none")]
-    pub public_key_multibase: Option<String>,
-    #[serde(rename = "publicKeyJwk", skip_serializing_if = "Option::is_none")]
-    pub public_key_jwk: Option<Jwk>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -69,6 +52,31 @@ impl std::fmt::Display for VerificationType {
     }
 }
 
+// See https://www.w3.org/TR/did-core/#verification-methods
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct VerificationMethod {
+    pub id: String,
+    // CAUTION The "controller" property must not be present w.r.t.:
+    // - https://jira.bit.admin.ch/browse/EIDSYS-352
+    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
+    // kept only for backwards compatibility and should not be used
+    #[serde(skip_serializing_if = "String::is_empty", default)]
+    pub controller: String,
+
+    #[serde(rename = "type")]
+    pub verification_type: VerificationType,
+
+    // CAUTION The "publicKeyMultibase" property must not be present w.r.t.:
+    // - https://jira.bit.admin.ch/browse/EIDOMNI-35
+    // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
+    // kept only for backwards compatibility and should not be used
+    #[serde(rename = "publicKeyMultibase", skip_serializing_if = "Option::is_none")]
+    pub public_key_multibase: Option<String>,
+
+    #[serde(rename = "publicKeyJwk", skip_serializing_if = "Option::is_none")]
+    pub public_key_jwk: Option<Jwk>,
+}
+
 impl VerificationMethod {
     pub fn new(
         id: String,
@@ -85,17 +93,6 @@ impl VerificationMethod {
         }
     }
 }
-impl Clone for VerificationMethod {
-    fn clone(&self) -> Self {
-        VerificationMethod {
-            id: self.id.clone(),
-            controller: self.controller.clone(),
-            verification_type: self.verification_type.clone(),
-            public_key_multibase: self.public_key_multibase.clone(),
-            public_key_jwk: self.public_key_jwk.clone(),
-        }
-    }
-}
 
 // See      https://www.w3.org/TR/did-core/#dfn-did-documents
 // Examples https://www.w3.org/TR/did-core/#did-documents
@@ -104,41 +101,50 @@ impl Clone for VerificationMethod {
 pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: Vec<String>,
+
     pub id: String,
+
     #[serde(rename = "verificationMethod")]
     pub verification_method: Vec<VerificationMethod>,
+
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub authentication: Vec<VerificationMethod>,
+
     #[serde(
         rename = "capabilityInvocation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub capability_invocation: Vec<VerificationMethod>,
+
     #[serde(
         rename = "capabilityDelegation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub capability_delegation: Vec<VerificationMethod>,
+
     #[serde(
         rename = "assertionMethod",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub assertion_method: Vec<VerificationMethod>,
+
     #[serde(
         rename = "keyAgreement",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub key_agreement: Vec<VerificationMethod>,
+
     // CAUTION The "controller" property must not be present w.r.t.:
     // - https://jira.bit.admin.ch/browse/EIDSYS-352
     // - https://confluence.bit.admin.ch/display/EIDTEAM/DID+Doc+Conformity+Check
-    // It is kept for the sake of backward compatibility only.
+    // kept only for backwards compatibility and should not be used
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub controller: Vec<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
 }
@@ -150,39 +156,47 @@ pub struct DidDoc {
 pub struct DidDocNormalized {
     #[serde(rename = "@context")]
     pub context: Vec<String>,
+
     pub id: String,
+
     #[serde(
         rename = "verificationMethod",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub verification_method: Vec<VerificationMethod>,
+
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub authentication: Vec<String>,
+
     #[serde(
         rename = "capabilityInvocation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub capability_invocation: Vec<String>,
+
     #[serde(
         rename = "capabilityDelegation",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub capability_delegation: Vec<String>,
+
     #[serde(
         rename = "assertionMethod",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub assertion_method: Vec<String>,
+
     #[serde(
         rename = "keyAgreement",
         skip_serializing_if = "Vec::is_empty",
         default
     )]
     pub key_agreement: Vec<String>,
+
     //#[serde(skip_serializing_if = "Vec::is_empty", default)]
     //pub controller: Vec<String>,
     // CAUTION The "controller" property must not be present w.r.t.:
@@ -191,6 +205,7 @@ pub struct DidDocNormalized {
     // It is kept for the sake of backward compatibility only.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub controller: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub deactivated: Option<bool>,
 }
@@ -211,7 +226,6 @@ impl DidDocNormalized {
             capability_delegation: vec![],
             assertion_method: vec![],
             key_agreement: vec![],
-            //controller: self.controller.clone(),
             controller,
             deactivated: self.deactivated,
         };
@@ -328,63 +342,4 @@ impl DidDoc {
         };
         Ok(did_doc)
     }
-
-    /* TODO remove as unused
-    pub fn normalize(&self) -> DidDocNormalized {
-        let controller: Option<String> = match self.controller.first() {
-            Some(controller) => Some(controller.clone()),
-            None => None,
-        };
-
-        let mut did_doc_norm = DidDocNormalized {
-            context: self.context.clone(), // vec![],
-            id: self.id.clone(),
-            verification_method: self.verification_method.clone(),
-            authentication: vec![],
-            capability_invocation: vec![],
-            capability_delegation: vec![],
-            assertion_method: vec![],
-            key_agreement: vec![],
-            //controller: self.controller.clone(),
-            controller,
-            deactivated: self.deactivated,
-        };
-        if !self.authentication.is_empty() {
-            did_doc_norm.authentication = self
-                .authentication
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.capability_invocation.is_empty() {
-            did_doc_norm.capability_invocation = self
-                .capability_invocation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.capability_delegation.is_empty() {
-            did_doc_norm.capability_delegation = self
-                .capability_delegation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.assertion_method.is_empty() {
-            did_doc_norm.assertion_method = self
-                .assertion_method
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.key_agreement.is_empty() {
-            did_doc_norm.key_agreement = self
-                .key_agreement
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        did_doc_norm
-    }
-     */
 }

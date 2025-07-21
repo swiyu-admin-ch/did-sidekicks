@@ -6,10 +6,9 @@ use jsonschema::{
     Keyword, ValidationError,
 };
 use serde_json::{Map, Value};
-use std::cmp::Ordering;
 
-/// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
-/// a regular `didwebvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
+/// Custom [`Keyword`] trait implementation able to validate if a JSON array represents
+/// a regular `did:webvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
 ///
 /// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview
 pub struct DidLogEntryKeyword;
@@ -112,7 +111,7 @@ impl Keyword for DidLogEntryKeyword {
     }
 }
 
-/// Yet another custom [`Keyword`] trait implementation able to validate the rule in regard
+/// Custom [`Keyword`] trait implementation able to validate the rule in regard
 /// to `versionTime` DID log entry item (as defined by https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check)
 pub struct DidVersionTimeKeyword;
 
@@ -120,8 +119,8 @@ impl DidVersionTimeKeyword {
     /// Required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
     pub const KEYWORD_NAME: &'static str = "did-version-time";
 
-    #[allow(clippy::result_large_err)] // "the `Err`-variant is at least 224 bytes" (default: 128)
     /// Required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
+    #[allow(clippy::result_large_err)] // "the `Err`-variant is at least 224 bytes" (default: 128)
     pub fn factory<'a>(
         _parent: &'a Map<String, Value>,
         value: &'a Value,
@@ -155,13 +154,13 @@ impl Keyword for DidVersionTimeKeyword {
     ) -> Result<(), ValidationError<'i>> {
         if let Value::String(dt) = instance {
             // versionTime:
-            // 1. Valid datetime in ISO8601 format SPEC
+            // 1. Valid datetime in ISO8601 format SPEC 
             // 2. datetime is before the current time
 
             match DateTime::parse_from_rfc3339(dt) {
                 Ok(dt) => {
                     let now = Local::now();
-                    if dt.ge(&now) {
+                    if dt > now {
                         return Err(ValidationError::custom(
                             Location::new(),
                             location.into(),
@@ -195,8 +194,7 @@ impl Keyword for DidVersionTimeKeyword {
     /// 2. is (as datetime) before the current time
     fn is_valid(&self, instance: &Value) -> bool {
         instance.as_str().is_some_and(|s| {
-            DateTime::parse_from_rfc3339(s)
-                .is_ok_and(|dt| dt.cmp(&Local::now().fixed_offset()) == Ordering::Less)
+            DateTime::parse_from_rfc3339(s).is_ok_and(|dt| dt < Local::now().fixed_offset())
         })
     }
 }
@@ -214,11 +212,6 @@ mod test {
         let schema = json!({WRONG_KEYWORD_NAME: true, "type": "array"});
 
         let validator = jsch_opts()
-            /*
-            .with_keyword(WRONG_KEYWORD_NAME, |_, _, _| {
-                Ok(Box::new(DidLogEntryKeyword))
-            }) // using closure
-             */
             .with_keyword(WRONG_KEYWORD_NAME, DidLogEntryKeyword::factory) // using factory
             .build(&schema);
 

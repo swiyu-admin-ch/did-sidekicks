@@ -135,7 +135,7 @@ impl DataIntegrityProof {
             Ok(JsonArray(entry)) => {
                 if entry.len() > 1 {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "A single proof is currently supported.".to_string(),
+                        "Only a single proof entry is currently supported".to_string(),
                     ));
                 }
 
@@ -143,7 +143,7 @@ impl DataIntegrityProof {
                     Some(first) => first.clone(),
                     None => {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                            "Empty proof array detected.".to_string(),
+                            "Proof array must not be empty.".to_string(),
                         ))
                     }
                 }
@@ -440,8 +440,6 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         proof: &DataIntegrityProof,
         doc_hash: &str,
     ) -> Result<(), DidSidekicksError> {
-        let proof_value = &proof.proof_value;
-
         let created = proof
             .created
             .to_rfc3339_opts(SecondsFormat::Secs, true)
@@ -472,7 +470,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             }
         };
         let hash_data = proof_hash + doc_hash;
-        let signature = Ed25519Signature::from_multibase(proof_value.as_str())?;
+        let signature = Ed25519Signature::from_multibase(&proof.proof_value.as_str())?;
         match self.verifying_key {
             Some(ref verifying_key) => {
                 let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(hash_data) {
