@@ -470,7 +470,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             }
         };
         let hash_data = proof_hash + doc_hash;
-        let signature = Ed25519Signature::from_multibase(&proof.proof_value.as_str())?;
+        let signature = Ed25519Signature::from_multibase(proof.proof_value.as_str())?;
         match self.verifying_key {
             Some(ref verifying_key) => {
                 let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(hash_data) {

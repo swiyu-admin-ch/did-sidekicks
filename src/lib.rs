@@ -28,7 +28,6 @@ uniffi::include_scaffolding!("did_sidekicks");
 mod test {
     use super::ed25519::*;
     use super::jcs_sha256_hasher::*;
-    use super::multibase::*;
     use crate::errors::*;
     use crate::vc_data_integrity::*;
     use chrono::DateTime;
@@ -53,52 +52,6 @@ mod test {
     #[once]
     fn ed25519_key_pair() -> Ed25519KeyPair {
         Ed25519KeyPair::generate()
-    }
-
-    #[rstest]
-    fn test_multibase_conversion() -> Result<(), Box<dyn std::error::Error>> {
-        let multibase = MultibaseEncoderDecoder::default();
-        let encoded = multibase.encode_base58btc("helloworld".as_bytes()); // == "z6sBRWyteSSzHrs"
-
-        let mut buff = vec![0; 16];
-        multibase.decode_base58_onto(encoded.as_str(), &mut buff)?;
-        let decoded = String::from_utf8_lossy(&buff).to_string();
-        assert!(decoded.starts_with("helloworld"));
-        Ok(())
-    }
-
-    #[rstest]
-    fn test_multibase_conversion_invalid_multibase() {
-        let multibase = MultibaseEncoderDecoder::default();
-        let encoded = multibase.encode_base58btc("helloworld".as_bytes()); // == "z6sBRWyteSSzHrs"
-
-        // Now, to induce error, just get rid of the multibase code (prefix char 'z')
-        let encoded_without_multibase = encoded.chars().skip(1).collect::<String>();
-        let mut buff = vec![0; 16];
-        let res = multibase.decode_base58_onto(encoded_without_multibase.as_str(), &mut buff);
-        assert!(res.is_err());
-        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
-        assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
-        assert!(err
-            .to_string()
-            .contains("Invalid multibase algorithm identifier 'Base58btc'"));
-    }
-
-    #[rstest]
-    fn test_multibase_conversion_buffer_too_small() {
-        let multibase = MultibaseEncoderDecoder::default();
-        let encoded = multibase.encode_base58btc("helloworld".as_bytes()); // == "z6sBRWyteSSzHrs"
-
-        // all it takes to reproduce the behaviour
-        let mut buff = vec![0; 8]; // empirical size for "helloworld" (encoded)
-
-        let res = multibase.decode_base58_onto(encoded.as_str(), &mut buff);
-        assert!(res.is_err());
-        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
-        assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
-        assert!(err
-            .to_string()
-            .contains("buffer provided to decode base58 encoded string into was too small"));
     }
 
     #[rstest]

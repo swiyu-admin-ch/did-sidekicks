@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use crate::errors::DidSidekicksError;
-use crate::multibase::MultibaseEncoderDecoder;
+use crate::multibase::MultibaseAlgorithm;
 use ed25519_dalek::{
     Signature, Signer, SigningKey, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
     SIGNATURE_LENGTH,
 };
 use rand::rngs::OsRng;
 
-pub trait MultiBaseConverter {
+pub trait MultibaseConverter {
     fn to_multibase(&self) -> String;
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError>
     where
@@ -22,16 +22,16 @@ pub struct Ed25519Signature {
     pub signature: Signature,
 }
 
-impl MultiBaseConverter for Ed25519Signature {
+impl MultibaseConverter for Ed25519Signature {
     fn to_multibase(&self) -> String {
         let signature_bytes = self.signature.to_bytes();
-        MultibaseEncoderDecoder::default().encode_base58btc(&signature_bytes)
+        MultibaseAlgorithm::Base58btc.encode(&signature_bytes)
     }
 
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut signature_bytes: [u8; SIGNATURE_LENGTH] = [0; SIGNATURE_LENGTH];
-        match MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signature_bytes)
-        {
+
+        match MultibaseAlgorithm::Base58btc.decode_onto(multibase, &mut signature_bytes) {
             Err(err) => Err(DidSidekicksError::DeserializationFailed(format!("{err}"))),
             Ok(_) => Ok(Ed25519Signature {
                 signature: Signature::from_bytes(&signature_bytes),
@@ -46,7 +46,7 @@ pub struct Ed25519SigningKey {
 }
 
 /// As specified by https://www.w3.org/TR/controller-document/#Multikey
-impl MultiBaseConverter for Ed25519SigningKey {
+impl MultibaseConverter for Ed25519SigningKey {
     /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
     ///
     /// The encoding of an Ed25519 secret key MUST start with the two-byte prefix 0x8026 (the varint expression of 0x1300),
@@ -59,7 +59,7 @@ impl MultiBaseConverter for Ed25519SigningKey {
         signing_key_with_prefix[0] = 0x13;
         signing_key_with_prefix[1] = 0x00;
         signing_key_with_prefix[2..].copy_from_slice(&signing_key_bytes);
-        MultibaseEncoderDecoder::default().encode_base58btc(&signing_key_with_prefix)
+        MultibaseAlgorithm::Base58btc.encode(&signing_key_with_prefix)
     }
 
     /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
@@ -71,7 +71,7 @@ impl MultiBaseConverter for Ed25519SigningKey {
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut signing_key_buff: [u8; SECRET_KEY_LENGTH + 2] = [0; SECRET_KEY_LENGTH + 2];
         if let Err(err) =
-            MultibaseEncoderDecoder::default().decode_base58_onto(multibase, &mut signing_key_buff)
+            MultibaseAlgorithm::Base58btc.decode_onto(multibase, &mut signing_key_buff)
         {
             return Err(DidSidekicksError::DeserializationFailed(format!("{err}")));
         }
@@ -107,7 +107,7 @@ pub struct Ed25519VerifyingKey {
 }
 
 /// As specified by https://www.w3.org/TR/controller-document/#Multikey
-impl MultiBaseConverter for Ed25519VerifyingKey {
+impl MultibaseConverter for Ed25519VerifyingKey {
     /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
     ///
     /// The encoding of an Ed25519 public key MUST start with the two-byte prefix 0xed01 (the varint expression of 0xed),
@@ -121,7 +121,7 @@ impl MultiBaseConverter for Ed25519VerifyingKey {
         public_key_with_prefix[0] = 0xed;
         public_key_with_prefix[1] = 0x01;
         public_key_with_prefix[2..].copy_from_slice(&public_key_without_prefix);
-        MultibaseEncoderDecoder::default().encode_base58btc(&public_key_with_prefix)
+        MultibaseAlgorithm::Base58btc.encode(&public_key_with_prefix)
     }
 
     /// As specified by https://www.w3.org/TR/controller-document/#Multikey:
@@ -133,8 +133,8 @@ impl MultiBaseConverter for Ed25519VerifyingKey {
     /// and then prepended with the base-58-btc Multibase header (z).
     fn from_multibase(multibase: &str) -> Result<Self, DidSidekicksError> {
         let mut verifying_key_buff: [u8; PUBLIC_KEY_LENGTH + 2] = [0; PUBLIC_KEY_LENGTH + 2];
-        if let Err(err) = MultibaseEncoderDecoder::default()
-            .decode_base58_onto(multibase, &mut verifying_key_buff)
+        if let Err(err) =
+            MultibaseAlgorithm::Base58btc.decode_onto(multibase, &mut verifying_key_buff)
         {
             return Err(DidSidekicksError::DeserializationFailed(format!("{err}")));
         }
