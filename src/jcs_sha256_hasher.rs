@@ -77,6 +77,7 @@ impl JcsSha256Hasher {
 }
 
 impl Default for JcsSha256Hasher {
+    /// The default constructor featuring a SHA2-256 hasher instance.
     fn default() -> Self {
         JcsSha256Hasher {
             hasher: Sha256::new(),
