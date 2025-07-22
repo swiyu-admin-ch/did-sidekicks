@@ -89,7 +89,7 @@ impl Default for CryptoSuiteProofOptions {
         Self {
             proof_type: "DataIntegrityProof".to_string(),
             crypto_suite: CryptoSuiteType::EddsaJcs2022,
-            created: Utc::now(), // fallback to current datetime
+            created: Utc::now(), // default current datetime
             verification_method: String::from(""),
             proof_purpose: "authentication".to_string(),
             context: None,
@@ -128,6 +128,7 @@ pub struct DataIntegrityProof {
     #[serde(rename = "proofValue")]
     proof_value: String,
 }
+
 impl DataIntegrityProof {
     /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
     pub fn from(json: String) -> Result<Self, DidSidekicksError> {

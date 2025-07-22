@@ -33,14 +33,14 @@ impl JcsSha256Hasher {
 
     /// Implementation of the multihash specification (https://www.w3.org/TR/controller-document/#multihash).
     /// Its output is a hash of the input using the associated <hash algorithm>, prefixed with a hash algorithm identifier and the hash size.
-    pub fn encode_multihash(&mut self, s: String) -> &'static [u8] {
+    pub fn encode_multihash(&mut self, s: String) -> Vec<u8> {
         self.hasher.reset();
         self.hasher.update(s);
         let digest = self.hasher.clone().finalize();
 
         // According to https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog:
-        //              Use multihash in the SCID to differentiate the different hash function outputs.
-        //              See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#name-base-58-bitcoin-encoding
+        // - Use multihash in the SCID to differentiate the different hash function outputs.
+        // - See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#name-base-58-bitcoin-encoding
 
         // multihash is an implementation of the multihash specification (https://www.w3.org/TR/controller-document/#multihash).
         // Its output is a hash of the input using the associated <hash algorithm>, prefixed with a hash algorithm identifier and the hash size.
@@ -50,10 +50,7 @@ impl JcsSha256Hasher {
             0x12u8,             // hash algorithm (sha2-256) identifier
             digest.len() as u8, // hash size (in bytes)
         ];
-        let multihash_digest = [multihash_header, digest.as_slice()].concat();
-        // The 'static lifetime means the referred-to data needs to be guaranteed to
-        // live for the rest of the program's execution.
-        multihash_digest.leak() // <-- data will NEVER be freed, a mutable reference to this data is returned
+        [multihash_header, digest.as_slice()].concat()
     }
 
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
