@@ -37,19 +37,11 @@ pub enum DidLogEntryValidatorErrorKind {
     DeserializationError,
 }
 
-/*
-///
-pub trait DidLogEntryJsonSchema {
-    fn get_json_schema(&self) -> &str;
-}
- */
-
 /// A compiled JSON Schema validator.
 ///
 /// This structure represents a JSON Schema that has been parsed and compiled into
 /// an efficient internal representation for validation. It contains the root node
 /// of the schema tree and the configuration options used during compilation.
-//#[derive(Debug, Default, PartialEq)]
 #[derive(Debug)]
 pub struct DidLogEntryValidator {
     validator: ValidatorBase,
@@ -76,20 +68,6 @@ impl DidLogEntryValidator {
         }
     }
 }
-
-/*
-impl From<&dyn DidLogEntryJsonSchema> for DidLogEntryValidator {
-    /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications
-    /// and supplied [`DidLogEntryJsonSchema`].
-    ///
-    /// Relies heavily on custom [`jsonschema::Keyword`] trait implementation like:
-    /// - [`DidLogEntryKeyword`] and
-    /// - [`DidVersionTimeKeyword`].
-    fn from(value: &dyn DidLogEntryJsonSchema) -> Self {
-        Self::from(value.get_json_schema())
-    }
-}
- */
 
 impl From<String> for DidLogEntryValidator {
     /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications

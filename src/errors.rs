@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-//use std::cmp::PartialEq;
-
-/// Yet another UniFFI-compliant error.
+/// UniFFI-compliant error.
 ///
 /// Resembles ssi::dids::resolution::Error
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -11,8 +9,7 @@ pub enum DidSidekicksError {
     #[error("failed to serialize DID document (to JSON): {0}")]
     SerializationFailed(String),
     /// The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation
-    #[error("The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}"
-    )]
+    #[error("The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation: {0}")]
     DeserializationFailed(String),
     /// Invalid DID document
     #[error("invalid DID document: {0}")]
