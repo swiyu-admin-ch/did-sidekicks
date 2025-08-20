@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+
 namespace did_sidekicks {
 };
 
@@ -13,35 +14,6 @@ enum DidSidekicksError {
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof"
-};
-
-
-interface Ed25519Signature {
-    [Name=from_multibase, Throws=DidSidekicksError]
-    constructor([ByRef] string multibase);
-    string to_multibase();
-};
-
-interface Ed25519SigningKey {
-    [Name=from_multibase, Throws=DidSidekicksError]
-    constructor([ByRef] string multibase);
-    string to_multibase();
-};
-
-interface Ed25519VerifyingKey {
-    [Name=from_multibase, Throws=DidSidekicksError]
-    constructor([ByRef] string multibase);
-    string to_multibase();
-};
-
-interface Ed25519KeyPair {
-    [Name=generate]
-    constructor();
-    [Name=from, Throws=DidSidekicksError]
-    constructor([ByRef] string signing_key_multibase);
-    Ed25519Signature sign(string message);
-    Ed25519SigningKey get_signing_key();
-    Ed25519VerifyingKey get_verifying_key();
 };
 
 dictionary Jwk {
@@ -81,19 +53,19 @@ interface DidDoc {
     boolean get_deactivated();
 };
 
-/**
+/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh
 [Trait]
 interface DidLogEntryJsonSchema {
-    string get_schema();
+    /// Delivers a proper JSON schema (in UTF-8 format) fully describing a DID log entry.
+    string get_json_schema();
 };
-*/
 
 /// Represents any error condition that might occur in conjunction with `DidLogEntryValidator`
 [Error]
 enum DidLogEntryValidatorError {
-    /// The supplied JSON instance is not a valid DID log.
+    /// The supplied JSON `instance` is not a valid DID log.
     "ValidationError",
-    /// The supplied JSON instance cannot be deserialized.
+    /// The supplied JSON `instance` cannot be deserialized.
     "DeserializationError",
 };
 
@@ -102,11 +74,15 @@ enum DidLogEntryValidatorError {
 /// This structure represents a JSON Schema that has been parsed and compiled into
 /// an efficient internal representation for validation. It contains the root node
 /// of the schema tree and the configuration options used during compilation.
+///
+/// Intended to be used predominantly in conjunction with `DidLogEntryJsonSchema` trait implementations.
 interface DidLogEntryValidator {
-    /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications and supplied schema.
+    /// Create a new DID log entry JSON Schema validator using `JSON Schema Draft 2020-12` specifications and supplied `schema`.
     [Name=from]
-    constructor(string schema);
-    /// Validate `instance` against `schema` and return the first error if any.
+    constructor(DidLogEntryJsonSchema schema);
+    /// Validate the supplied `instance` against the `schema` (supplied earlier via constructor).
+    ///
+    /// `DidLogEntryValidatorError` is returned as soon the very first validation error occurs.
     [Throws=DidLogEntryValidatorError]
     void validate(string instance);
 };

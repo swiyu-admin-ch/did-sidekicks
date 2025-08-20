@@ -18,7 +18,7 @@ pub mod did_jsonschema;
 
 // CAUTION All structs required by UniFFI bindings generator (declared in UDL) MUST also be "used" here
 use did_doc::*;
-use ed25519::*;
+//use ed25519::*;
 use errors::*;
 use did_jsonschema::*;
 
