@@ -19,21 +19,39 @@ enum DidSidekicksError {
 };
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
-/// The value returned by `DidMethodParameter`'s getter `as_json_string` must always be deserializable into a JSON object.
+///
+/// The value returned by `DidMethodParameter`'s getter `get_json_text` is guaranteed to be deserializable back into a JSON object.
 interface DidMethodParameter {
     string get_name();
     string get_json_text();
     boolean is_bool();
     boolean is_string();
-    boolean is_number();
+    boolean is_f64();
+    boolean is_i64();
+    boolean is_u64();
     boolean is_object();
     boolean is_array();
+    boolean is_empty_array();
+    boolean is_string_array();
     boolean is_null();
-    boolean get_bool_value();
-    string get_string_value();
-    double get_f64_value();
-    i64 get_i64_value();
-    u64 get_u64_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_bool` returns `true`,
+    /// the getter is guaranteed to return a `bool` value.
+    boolean? get_bool_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_string` returns `true`,
+    /// the getter is guaranteed to return a `string` value.
+    string? get_string_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_string_array` returns `true`,
+    /// the getter is guaranteed to return a ``string array.
+    sequence<string>? get_string_array_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_f64` returns `true`,
+    /// the getter is guaranteed to return a `f64` value.
+    double? get_f64_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_i64` returns `true`,
+    /// the getter is guaranteed to return a `i64` value.
+    i64? get_i64_value();
+    /// For any `DidMethodParameter` on which `DidMethodParameter::is_u64` returns `true`,
+    /// the getter is guaranteed to return a `u64` value.
+    u64? get_u64_value();
 };
 
 dictionary Jwk {

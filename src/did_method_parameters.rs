@@ -1,23 +1,31 @@
 // SPDX-License-Identifier: MIT
 
 use crate::errors::DidSidekicksError;
-use serde_json::{from_str as json_from_str, to_string as json_to_string, Number, Value};
+use serde_json::{from_str as json_from_str, to_string as json_to_string, Value};
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
-/// The value returned by [`DidMethodParameter::as_json_string`] must always be deserializable into a JSON object.
+///
+/// The value returned by [`DidMethodParameter::get_json_text`] is guaranteed to be deserializable back into a JSON object.
 #[derive(Debug, Clone)]
 pub struct DidMethodParameter {
     name: String,
     json_text: String,
     is_bool: bool,
     is_string: bool,
-    is_number: bool,
+    is_f64: bool,
+    is_i64: bool,
+    is_u64: bool,
     is_object: bool,
     is_array: bool,
+    is_empty_array: bool,
+    is_string_array: bool,
     is_null: bool,
     bool_value: Option<bool>,
     string_value: Option<String>,
-    number_value: Option<Number>,
+    string_array_value: Option<Vec<String>>,
+    f64_value: Option<f64>,
+    i64_value: Option<i64>,
+    u64_value: Option<u64>,
 }
 
 impl DidMethodParameter {
@@ -96,18 +104,31 @@ impl DidMethodParameter {
     ///
     /// The supplied string of JSON text (`json_text`) must be deserializable into a JSON object.
     fn new(name: &str, json_text: String) -> Result<Self, DidSidekicksError> {
+        if name.is_empty() {
+            return Err(DidSidekicksError::InvalidDidMethodParameter(
+                "a DID method parameter must be properly named".to_string(),
+            ));
+        }
+
         let mut v = Self {
             name: name.to_string(),
             json_text: json_text.clone(),
             is_bool: false,
             is_string: false,
-            is_number: false,
+            is_f64: false,
+            is_i64: false,
+            is_u64: false,
             is_object: false,
             is_array: false,
+            is_empty_array: true, // CAUTION
+            is_string_array: false,
             is_null: false,
             bool_value: None,
             string_value: None,
-            number_value: None,
+            string_array_value: None,
+            f64_value: None,
+            i64_value: None,
+            u64_value: None,
         };
 
         match json_from_str::<Value>(json_text.as_str()) {
@@ -120,14 +141,42 @@ impl DidMethodParameter {
                 v.string_value = Some(entry);
             }
             Ok(Value::Number(entry)) => {
-                v.is_number = true;
-                v.number_value = Some(entry);
+                if entry.is_f64() {
+                    v.is_f64 = true;
+                    // panic-safe unwrap call: For any Number on which is_f64 returns true,
+                    //                         as_f64 is guaranteed to return the floating point value
+                    v.f64_value = Some(entry.as_f64().unwrap());
+                } else if entry.is_i64() {
+                    v.is_i64 = true;
+                    // panic-safe unwrap call: If the Number is an integer
+                    //                         represent it as i64 if possible. Returns None otherwise
+                    v.i64_value = Some(entry.as_i64().unwrap());
+                } else if entry.is_u64() {
+                    v.is_u64 = true;
+                    // panic-safe unwrap call: If the Number is an integer,
+                    //                         represent it as u64 if possible. Returns None otherwise
+                    v.u64_value = Some(entry.as_u64().unwrap());
+                }
             }
             Ok(Value::Object(_)) => {
                 v.is_object = true;
             }
-            Ok(Value::Array(_)) => {
+            Ok(Value::Array(entry)) => {
                 v.is_array = true;
+                if !entry.is_empty() {
+                    v.is_empty_array = false;
+                    let mut arr= vec![];
+                    entry.iter().for_each(|e| {
+                        if e.is_string() {
+                            // panic-safe unwrap call: For any Value on which is_string returns true,
+                            //                         as_str is guaranteed to return the string slice
+                            arr.push(e.as_str().unwrap().to_string());
+                            // TODO } else if e.is_object() {
+                        }
+                    });
+                    v.is_string_array = true;
+                    v.string_array_value = Some(arr);
+                };
             }
             Ok(Value::Null) => {
                 v.is_null = true;
@@ -148,6 +197,8 @@ impl DidMethodParameter {
     }
 
     /// A UniFFI-compliant getter.
+    ///
+    /// The value returned by the getter is guaranteed to be deserializable back into a JSON object.
     pub fn get_json_text(&self) -> String {
         self.json_text.clone()
     }
@@ -163,8 +214,18 @@ impl DidMethodParameter {
     }
 
     /// A UniFFI-compliant getter.
-    pub fn is_number(&self) -> bool {
-        self.is_number
+    pub fn is_f64(&self) -> bool {
+        self.is_f64
+    }
+
+    /// A UniFFI-compliant getter.
+    pub fn is_i64(&self) -> bool {
+        self.is_i64
+    }
+
+    /// A UniFFI-compliant getter.
+    pub fn is_u64(&self) -> bool {
+        self.is_u64
     }
 
     /// A UniFFI-compliant getter.
@@ -178,58 +239,89 @@ impl DidMethodParameter {
     }
 
     /// A UniFFI-compliant getter.
+    pub fn is_empty_array(&self) -> bool {
+        self.is_empty_array
+    }
+
+    /// A UniFFI-compliant getter.
+    pub fn is_string_array(&self) -> bool {
+        self.is_string_array
+    }
+
+    /// A UniFFI-compliant getter.
     pub fn is_null(&self) -> bool {
         self.is_null
     }
 
     /// A UniFFI-compliant getter.
-    pub fn get_bool_value(&self) -> bool {
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_bool`] returns `true`,
+    /// the getter is guaranteed to return a `bool` value.
+    pub fn get_bool_value(&self) -> Option<bool> {
         if let Some(x) = &self.bool_value {
-            return *x;
+            return Some(*x);
         }
 
-        false
+        None
     }
 
     /// A UniFFI-compliant getter.
-    pub fn get_string_value(&self) -> String {
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_string`] returns `true`,
+    /// the getter is guaranteed to return a [`String`] value.
+    pub fn get_string_value(&self) -> Option<String> {
         if let Some(x) = &self.string_value {
-            return x.to_string();
+            return Some(x.clone());
         }
 
-        "".to_string()
+        None
     }
 
     /// A UniFFI-compliant getter.
-    pub fn get_f64_value(&self) -> f64 {
-        if let Some(x) = &self.number_value {
-            if x.is_f64() {
-                return x.as_f64().unwrap_or(0.0);
-            }
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_string_array`] returns `true`,
+    /// the getter is guaranteed to return a `Vec<String>` value.
+    pub fn get_string_array_value(&self) -> Option<Vec<String>> {
+        if let Some(x) = &self.string_array_value {
+            return Some(x.to_vec());
         }
 
-        0.0
+        None
     }
 
     /// A UniFFI-compliant getter.
-    pub fn get_i64_value(&self) -> i64 {
-        if let Some(x) = &self.number_value {
-            if x.is_i64() {
-                return x.as_i64().unwrap_or(0);
-            }
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_f64`] returns `true`,
+    /// the getter is guaranteed to return a `f64` value.
+    pub fn get_f64_value(&self) -> Option<f64> {
+        if let Some(x) = &self.f64_value {
+            return Some(*x);
         }
 
-        0
+        None
     }
 
     /// A UniFFI-compliant getter.
-    pub fn get_u64_value(&self) -> u64 {
-        if let Some(x) = &self.number_value {
-            if x.is_u64() {
-                return x.as_u64().unwrap_or(0);
-            }
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_i64`] returns `true`,
+    /// the getter is guaranteed to return a `i64` value.
+    pub fn get_i64_value(&self) -> Option<i64> {
+        if let Some(x) = &self.i64_value {
+            return Some(*x);
         }
 
-        0
+        None
+    }
+
+    /// A UniFFI-compliant getter.
+    ///
+    /// For any [`DidMethodParameter`] on which [`DidMethodParameter::is_u64`] returns `true`,
+    /// the getter is guaranteed to return a `u64` value.
+    pub fn get_u64_value(&self) -> Option<u64> {
+        if let Some(x) = &self.u64_value {
+            return Some(*x);
+        }
+
+        None
     }
 }
