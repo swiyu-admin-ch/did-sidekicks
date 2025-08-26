@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+use crate::did_method_parameters::DidMethodParameter;
 use crate::errors::DidSidekicksError;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 /// An entry in DID log file as shown here
 /// https://bcgov.github.io/trustdidweb/#term:did-log-entry
@@ -280,6 +283,13 @@ impl DidDocNormalized {
     }
 }
 
+/// A simple container for both [`DidDoc`] and the related collection of [`DidMethodParameter`] objects.
+#[derive(Debug, Clone)]
+pub struct DidDocExtended {
+    did_doc: DidDoc,
+    did_method_parameters: HashMap<String, Arc<DidMethodParameter>>,
+}
+
 impl DidDoc {
     pub fn get_context(&self) -> Vec<String> {
         self.context.clone()
@@ -387,4 +397,31 @@ impl DidDoc {
         did_doc_norm
     }
      */
+}
+
+impl DidDocExtended {
+    /// The only non-empty constructor of the type.
+    pub fn new(
+        did_doc: DidDoc,
+        did_method_parameters: HashMap<String, Arc<DidMethodParameter>>,
+    ) -> Self {
+        Self {
+            did_doc,
+            did_method_parameters,
+        }
+    }
+
+    pub fn get_did_doc_obj(&self) -> DidDoc {
+        self.did_doc.clone()
+    }
+
+    /// A UniFFI-compliant version of [`DidDocExtended::get_did_doc_obj`] getter.
+    pub fn get_did_doc(&self) -> Arc<DidDoc> {
+        Arc::new(self.get_did_doc_obj())
+    }
+
+    /// A UniFFI-compliant getter.
+    pub fn get_did_method_parameters(&self) -> HashMap<String, Arc<DidMethodParameter>> {
+        self.did_method_parameters.clone()
+    }
 }

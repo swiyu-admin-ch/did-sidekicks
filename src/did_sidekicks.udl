@@ -13,7 +13,27 @@ enum DidSidekicksError {
     /// Invalid DID document.
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
-    "InvalidDataIntegrityProof"
+    "InvalidDataIntegrityProof",
+    /// Invalid DID method parameter
+    "InvalidDidMethodParameter"
+};
+
+/// A generic DID method parameter as seen from the perspective of a JSON deserializer.
+/// The value returned by `DidMethodParameter`'s getter `as_json_string` must always be deserializable into a JSON object.
+interface DidMethodParameter {
+    string get_name();
+    string get_json_text();
+    boolean is_bool();
+    boolean is_string();
+    boolean is_number();
+    boolean is_object();
+    boolean is_array();
+    boolean is_null();
+    boolean get_bool_value();
+    string get_string_value();
+    double get_f64_value();
+    i64 get_i64_value();
+    u64 get_u64_value();
 };
 
 dictionary Jwk {
@@ -51,6 +71,12 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     sequence<string> get_controller();
     boolean get_deactivated();
+};
+
+/// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.
+interface DidDocExtended {
+    DidDoc get_did_doc();
+    record<string, DidMethodParameter> get_did_method_parameters();
 };
 
 /// W.r.t. any of specification versions available at https://identity.foundation/didwebvh

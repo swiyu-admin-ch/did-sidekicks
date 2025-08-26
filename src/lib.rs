@@ -15,11 +15,13 @@ pub mod multibase;
 pub mod vc_data_integrity;
 pub mod custom_jsonschema_keywords;
 pub mod did_jsonschema;
+pub mod did_method_parameters;
 
 // CAUTION All structs required by UniFFI bindings generator (declared in UDL) MUST also be "used" here
 use did_doc::*;
 //use ed25519::*;
 use errors::*;
+use did_method_parameters::*;
 use did_jsonschema::*;
 
 uniffi::include_scaffolding!("did_sidekicks");

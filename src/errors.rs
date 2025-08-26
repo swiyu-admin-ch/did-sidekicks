@@ -20,6 +20,9 @@ pub enum DidSidekicksError {
     /// Invalid DID log integration proof
     #[error("invalid DID log integration proof: {0}")]
     InvalidDataIntegrityProof(String),
+    /// Invalid DID method parameter
+    #[error("invalid DID method parameter: {0}")]
+    InvalidDidMethodParameter(String),
 }
 
 impl DidSidekicksError {
@@ -30,6 +33,7 @@ impl DidSidekicksError {
             Self::DeserializationFailed(_) => DidSidekicksErrorKind::DeserializationFailed,
             Self::InvalidDidDocument(_) => DidSidekicksErrorKind::InvalidDidDocument,
             Self::InvalidDataIntegrityProof(_) => DidSidekicksErrorKind::InvalidIntegrityProof,
+            Self::InvalidDidMethodParameter(_) => DidSidekicksErrorKind::InvalidDidMethodParameter,
         }
     }
 }
@@ -43,4 +47,5 @@ pub enum DidSidekicksErrorKind {
     DeserializationFailed,
     InvalidDidDocument,
     InvalidIntegrityProof,
+    InvalidDidMethodParameter,
 }
