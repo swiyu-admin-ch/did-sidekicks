@@ -16,6 +16,7 @@ pub mod vc_data_integrity;
 pub mod custom_jsonschema_keywords;
 pub mod did_jsonschema;
 pub mod did_method_parameters;
+pub mod did_resolver;
 
 // CAUTION All structs required by UniFFI bindings generator (declared in UDL) MUST also be "used" here
 use did_doc::*;
