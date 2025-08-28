@@ -77,6 +77,24 @@ dictionary VerificationMethod {
     Jwk? public_key_jwk;
 };
 
+/// The error accompanying any `DidResolver` implementation.
+/// It might occur while calling `DidResolver` methods.
+[Error]
+enum DidResolverError {
+    /// Invalid method-specific identifier.
+    "InvalidMethodSpecificId",
+    /// Failed to serialize DID document (to JSON).
+    "SerializationFailed",
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
+    "DeserializationFailed",
+    /// Invalid DID parameter.
+    "InvalidDidParameter",
+    /// Invalid DID document.
+    "InvalidDidDocument",
+    /// Invalid DID log integration proof.
+    "InvalidDataIntegrityProof"
+};
+
 interface DidDoc {
     [Name=from_json, Throws=DidSidekicksError]
     constructor([ByRef] string json_content);
