@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use std::sync::Arc;
 use thiserror::Error;
 
 use crate::custom_jsonschema_keywords::*;
@@ -37,18 +38,21 @@ pub enum DidLogEntryValidatorErrorKind {
     DeserializationError,
 }
 
-/*
+/// W.r.t. any of specification versions available at https://identity.foundation/didwebvh
 ///
-pub trait DidLogEntryJsonSchema {
-    fn get_json_schema(&self) -> &str;
+/// A UniFFI-compliant trait.
+pub trait DidLogEntryJsonSchema: Send + Sync {
+    /// Delivers a proper JSON schema (in UTF-8 format) fully describing a DID log entry.
+    fn get_json_schema(&self) -> String;
 }
- */
 
 /// A compiled JSON Schema validator.
 ///
 /// This structure represents a JSON Schema that has been parsed and compiled into
 /// an efficient internal representation for validation. It contains the root node
 /// of the schema tree and the configuration options used during compilation.
+///
+/// Intended to be used predominantly in conjunction with [`DidLogEntryJsonSchema`] trait implementations.
 //#[derive(Debug, Default, PartialEq)]
 #[derive(Debug)]
 pub struct DidLogEntryValidator {
@@ -56,7 +60,9 @@ pub struct DidLogEntryValidator {
 }
 
 impl DidLogEntryValidator {
-    /// Validate `instance` against `schema` and return the first error if any.
+    /// Validate the supplied `instance` against the `schema` (supplied earlier via constructor).
+    ///
+    /// [`DidLogEntryValidatorError`] is returned as soon the very first validation error occurs.
     ///
     /// A UniFFI-compliant method.
     pub fn validate(&self, instance: String) -> Result<(), DidLogEntryValidatorError> {
@@ -77,19 +83,31 @@ impl DidLogEntryValidator {
     }
 }
 
-/*
-impl From<&dyn DidLogEntryJsonSchema> for DidLogEntryValidator {
+impl From<Arc<dyn DidLogEntryJsonSchema>> for DidLogEntryValidator {
     /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications
-    /// and supplied [`DidLogEntryJsonSchema`].
+    /// and supplied thread-safe [`DidLogEntryJsonSchema`] trait implementation.
     ///
     /// Relies heavily on custom [`jsonschema::Keyword`] trait implementation like:
     /// - [`DidLogEntryKeyword`] and
     /// - [`DidVersionTimeKeyword`].
-    fn from(value: &dyn DidLogEntryJsonSchema) -> Self {
-        Self::from(value.get_json_schema())
+    ///
+    /// A UniFFI-compliant constructor.
+    fn from(schema: Arc<dyn DidLogEntryJsonSchema>) -> Self {
+        Self::from(schema.get_json_schema().as_str())
     }
 }
- */
+
+impl From<&dyn DidLogEntryJsonSchema> for DidLogEntryValidator {
+    /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications
+    /// and supplied [`DidLogEntryJsonSchema`] trait implementation.
+    ///
+    /// Relies heavily on custom [`jsonschema::Keyword`] trait implementation like:
+    /// - [`DidLogEntryKeyword`] and
+    /// - [`DidVersionTimeKeyword`].
+    fn from(schema: &dyn DidLogEntryJsonSchema) -> Self {
+        Self::from(schema.get_json_schema().as_str())
+    }
+}
 
 impl From<String> for DidLogEntryValidator {
     /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications
@@ -134,5 +152,33 @@ impl From<&str> for DidLogEntryValidator {
             }
             Err(e) => panic!("{}", e.to_string()),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{DidLogEntryJsonSchema, DidLogEntryValidator};
+    use rstest::rstest;
+    use std::sync::Arc;
+
+    struct EmptyDidLogEntryJsonSchemaImpl {}
+    impl DidLogEntryJsonSchema for EmptyDidLogEntryJsonSchemaImpl {
+        fn get_json_schema(&self) -> String {
+            "".to_string()
+        }
+    }
+
+    #[rstest]
+    #[should_panic(expected = "EOF while parsing a value at line 1 column 0")]
+    fn test_create_validator_from_empty_schema_thread_safe() {
+        let schema: Arc<dyn DidLogEntryJsonSchema> = Arc::new(EmptyDidLogEntryJsonSchemaImpl {});
+        let _ = DidLogEntryValidator::from(schema);
+    }
+
+    #[rstest]
+    #[should_panic(expected = "EOF while parsing a value at line 1 column 0")]
+    fn test_create_validator_from_empty_schema() {
+        let schema: &dyn DidLogEntryJsonSchema = &EmptyDidLogEntryJsonSchemaImpl {};
+        let _ = DidLogEntryValidator::from(schema);
     }
 }

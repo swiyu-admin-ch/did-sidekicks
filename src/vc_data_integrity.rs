@@ -43,7 +43,7 @@ pub struct CryptoSuiteProofOptions {
     pub verification_method: String,
     pub proof_purpose: String,
     pub context: Option<Vec<String>>,
-    pub challenge: String,
+    pub challenge: Option<String>,
 }
 
 impl CryptoSuiteProofOptions {
@@ -72,7 +72,7 @@ impl CryptoSuiteProofOptions {
         }
 
         options.context = context;
-        options.challenge = challenge;
+        options.challenge = Some(challenge);
         options
     }
 
@@ -90,7 +90,7 @@ impl CryptoSuiteProofOptions {
             verification_method: String::from(""),
             proof_purpose: "authentication".to_string(),
             context: None,
-            challenge: String::from(""),
+            challenge: Some(String::from("")),
         }
     }
 }
@@ -114,7 +114,7 @@ pub struct DataIntegrityProof {
     #[serde(rename = "proofPurpose")]
     pub proof_purpose: String,
     pub context: Option<Vec<String>>,
-    pub challenge: String,
+    pub challenge: Option<String>,
     #[serde(rename = "proofValue")]
     pub proof_value: String,
 }
@@ -247,10 +247,8 @@ impl DataIntegrityProof {
                 )),
             },
             challenge: match value["challenge"] {
-                JsonString(ref s) => s.to_string(),
-                JsonNull => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Missing proof's challenge parameter. Expected a challenge of type string.".to_string(),
-                )),
+                JsonString(ref s) => Some(s.to_string()),
+                JsonNull => None,
                 _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                     "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_string(),
                 ))
@@ -387,8 +385,11 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             "created": created,
             "verificationMethod": options.verification_method,
             "proofPurpose": options.proof_purpose,
-            "challenge": options.challenge,
         });
+
+        if let Some(challenge) = &options.challenge {
+            proof_without_proof_value["challenge"] = json!(challenge);
+        }
 
         if let Some(ctx) = &options.context {
             proof_without_proof_value["@context"] = json!(ctx);
@@ -462,8 +463,11 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             "created": created,
             "verificationMethod": proof.verification_method,
             "proofPurpose": proof.proof_purpose,
-            "challenge": proof.challenge, // EIDSYS-429
         });
+        if let Some(challenge) = &proof.challenge {
+            proof_without_proof_value["challenge"] = json!(challenge) // EIDSYS-429
+        }
+
         if let Some(ctx) = &proof.context {
             proof_without_proof_value["@context"] = json!(ctx);
         }
