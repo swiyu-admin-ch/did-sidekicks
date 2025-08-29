@@ -17,13 +17,6 @@ pub struct JcsSha256Hasher {
     hasher: Sha256,
 }
 impl JcsSha256Hasher {
-    /// The default constructor featuring a SHA2-256 hasher instance.
-    pub fn default() -> Self {
-        JcsSha256Hasher {
-            hasher: Sha256::new(),
-        }
-    }
-
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 hash out of it.
     /// The hash encoded as hex strict representation is returned. Lower case letters are used (e.g. f9b4ca)
     ///
@@ -84,5 +77,14 @@ impl JcsSha256Hasher {
             .with_alphabet(Alphabet58::BITCOIN) // it is the default alphabet, but still (to ensure spec conformity)
             .into_string();
         Ok(encoded)
+    }
+}
+
+/// The default constructor featuring a SHA2-256 hasher instance.
+impl Default for JcsSha256Hasher {
+    fn default() -> Self {
+        JcsSha256Hasher {
+            hasher: Sha256::new(),
+        }
     }
 }
