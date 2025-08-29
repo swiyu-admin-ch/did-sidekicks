@@ -1,6 +1,6 @@
 # DID sidekicks changelog
 
-| Version | Description                                                            |
-|---------|------------------------------------------------------------------------|
-| 1.0.0   | Forked from [didtoolbox](https://github.com/swiyu-admin-ch/didtoolbox) |
+| Version | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0.0   | Forked from [didtoolbox](https://github.com/swiyu-admin-ch/didtoolbox). Reusing _GitHub Action_ [workflows](https://github.com/swiyu-admin-ch/github-actions-workflows). A new UniFFI-compliant trait introduced (`DidLogEntryJsonSchema`). Using the latest UniFFI ([0.29.4](https://mozilla.github.io/uniffi-rs/0.29/)). Added new module did_method_parameters` (feat. `DidMethodParameter` type). Dyn-compatible `DidResolver` trait (accompanied by new `DidResolverError` enum) introduced. |
 
