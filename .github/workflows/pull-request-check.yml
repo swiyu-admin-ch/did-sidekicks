@@ -1,6 +1,6 @@
 name: Pull Request Check
 
-run-name: ${{ github.repository }} is evaluating pull request
+#run-name: ${{ github.repository }} is evaluating pull request
 #on: [pull_request]
 
 on:
