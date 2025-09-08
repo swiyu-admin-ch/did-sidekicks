@@ -1,17 +1,22 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
 name: CodeQL Analysis
 
-#run-name: ${{ github.repository }} is evaluating pull request
-
 on:
-  # REMOVEME
-  #workflow_dispatch:
-
-  # Specify an on.push hook to analyze and see code scanning alerts from the default branch on the Security tab.
   push:
-#    branches: [main]
-
+    #branches: [ "main" ]
+    # speed up the CI pipeline, since the linting process will not be performed if no source code files were changed.
+    paths:
+      - '**/*.rs'
   pull_request:
-#    branches: [main]
+    branches: [ "main" ]
+  merge_group:
+    branches: [ "main" ]
+  # REMOVEME
+  workflow_dispatch:
 
 permissions:
   # to fetch code (actions/checkout)
