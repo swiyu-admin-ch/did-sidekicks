@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 namespace did_sidekicks {
+    /// parses the provided did doc and returns the JWK key with the specified id.
+    ///
+    /// `DidSidekicksError` is returned when the did doc is invalid or the key could not be found in the doc.
+    [Throws=DidSidekicksError]
+    Jwk get_key_with_id_from_did_doc(string did_doc, string id);
 };
+
 
 /// The error accompanying this crate.
 [Error]
@@ -15,7 +21,9 @@ enum DidSidekicksError {
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof",
     /// Invalid DID method parameter
-    "InvalidDidMethodParameter"
+    "InvalidDidMethodParameter",
+    /// Key not found
+    "KeyNotFound"
 };
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
@@ -107,6 +115,11 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     sequence<string> get_controller();
     boolean get_deactivated();
+    /// returns the JWK key with the specified id
+    /// 
+    /// `DidSidekicksError` is returned when the did doc doesn't contain any matching JWK key.
+    [Throws=DidSidekicksError]
+    Jwk get_key_with_id(string id);
 };
 
 /// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.

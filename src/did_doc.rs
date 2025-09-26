@@ -339,64 +339,42 @@ impl DidDoc {
         Ok(did_doc)
     }
 
-    /* TODO remove as unused
-    pub fn normalize(&self) -> DidDocNormalized {
-        let controller: Option<String> = match self.controller.first() {
-            Some(controller) => Some(controller.clone()),
-            None => None,
-        };
+    /// returns the JWK key with the specified id
+    pub fn get_key_with_id(&self, id: String) -> Result<Jwk, DidSidekicksError> {
+        let methods = self.verification_method.iter();
+        let methods = methods.chain(self.authentication.iter());
+        let methods = methods.chain(self.capability_invocation.iter());
+        let methods = methods.chain(self.capability_delegation.iter());
+        let methods = methods.chain(self.assertion_method.iter());
+        let mut methods = methods.chain(self.key_agreement.iter());
 
-        let mut did_doc_norm = DidDocNormalized {
-            context: self.context.clone(), // vec![],
-            id: self.id.clone(),
-            verification_method: self.verification_method.clone(),
-            authentication: vec![],
-            capability_invocation: vec![],
-            capability_delegation: vec![],
-            assertion_method: vec![],
-            key_agreement: vec![],
-            //controller: self.controller.clone(),
-            controller,
-            deactivated: self.deactivated,
-        };
-        if !self.authentication.is_empty() {
-            did_doc_norm.authentication = self
-                .authentication
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
+        let result = methods.find(|&key| key.id.ends_with(format!("#{}", id).as_str()));
+        match result {
+            Some(key) => match &key.public_key_jwk {
+                Some(jwk) => Ok(jwk.clone()),
+                None => Err(DidSidekicksError::KeyNotFound(
+                    "Found but no key".to_string(),
+                )),
+            },
+            None => Err(DidSidekicksError::KeyNotFound(id.to_string())),
         }
-        if !self.capability_invocation.is_empty() {
-            did_doc_norm.capability_invocation = self
-                .capability_invocation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.capability_delegation.is_empty() {
-            did_doc_norm.capability_delegation = self
-                .capability_delegation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.assertion_method.is_empty() {
-            did_doc_norm.assertion_method = self
-                .assertion_method
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.key_agreement.is_empty() {
-            did_doc_norm.key_agreement = self
-                .key_agreement
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        did_doc_norm
     }
-     */
+}
+
+/// parses the provided did doc and returns the JWK key with the specified id.
+pub fn get_key_with_id_from_did_doc(did_doc: String, id: String) -> Result<Jwk, DidSidekicksError> {
+    let doc = match serde_json::from_str::<DidDocNormalized>(did_doc.as_str()) {
+        Ok(doc) => match doc.to_did_doc() {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+        Err(_) => match serde_json::from_str::<DidDoc>(did_doc.as_str()) {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+    };
+
+    doc.get_key_with_id(id)
 }
 
 impl DidDocExtended {

@@ -23,6 +23,9 @@ pub enum DidSidekicksError {
     /// Invalid DID method parameter
     #[error("invalid DID method parameter: {0}")]
     InvalidDidMethodParameter(String),
+    /// No verification with specified key found in did doc
+    #[error("key '{0}' not found in the DID document")]
+    KeyNotFound(String),
 }
 
 impl DidSidekicksError {
@@ -34,6 +37,7 @@ impl DidSidekicksError {
             Self::InvalidDidDocument(_) => DidSidekicksErrorKind::InvalidDidDocument,
             Self::InvalidDataIntegrityProof(_) => DidSidekicksErrorKind::InvalidIntegrityProof,
             Self::InvalidDidMethodParameter(_) => DidSidekicksErrorKind::InvalidDidMethodParameter,
+            Self::KeyNotFound(_) => DidSidekicksErrorKind::KeyNotFound,
         }
     }
 }
@@ -48,6 +52,7 @@ pub enum DidSidekicksErrorKind {
     InvalidDidDocument,
     InvalidIntegrityProof,
     InvalidDidMethodParameter,
+    KeyNotFound,
 }
 
 /// The error accompanying [`DidResolver`] trait.
