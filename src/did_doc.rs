@@ -339,64 +339,66 @@ impl DidDoc {
         Ok(did_doc)
     }
 
-    /* TODO remove as unused
-    pub fn normalize(&self) -> DidDocNormalized {
-        let controller: Option<String> = match self.controller.first() {
-            Some(controller) => Some(controller.clone()),
-            None => None,
-        };
-
-        let mut did_doc_norm = DidDocNormalized {
-            context: self.context.clone(), // vec![],
-            id: self.id.clone(),
-            verification_method: self.verification_method.clone(),
-            authentication: vec![],
-            capability_invocation: vec![],
-            capability_delegation: vec![],
-            assertion_method: vec![],
-            key_agreement: vec![],
-            //controller: self.controller.clone(),
-            controller,
-            deactivated: self.deactivated,
-        };
-        if !self.authentication.is_empty() {
-            did_doc_norm.authentication = self
-                .authentication
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    pub fn get_key(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
+        // A JWK referenced by the supplied key_id might be anywhere in this DID doc
+        match self
+            .verification_method
+            .iter()
+            .chain(self.authentication.iter())
+            .chain(self.capability_invocation.iter())
+            .chain(self.capability_delegation.iter())
+            .chain(self.assertion_method.iter())
+            .chain(self.key_agreement.iter())
+            .find(|&key| key.id.ends_with(format!("#{}", key_id).as_str()))
+        {
+            Some(key) => match &key.public_key_jwk {
+                Some(jwk) => match &jwk.kid {
+                    Some(kid) => {
+                        if kid.as_str() == key_id {
+                            return Ok(jwk.to_owned());
+                        }
+                        Err(DidSidekicksError::KeyNotFound(key_id.to_string()))
+                    }
+                    None => Ok(jwk.to_owned()),
+                },
+                None => Err(DidSidekicksError::KeyNotFound(
+                    "Non-existing key referenced".to_string()
+                )),
+            },
+            None => Err(DidSidekicksError::KeyNotFound(key_id.to_string())),
         }
-        if !self.capability_invocation.is_empty() {
-            did_doc_norm.capability_invocation = self
-                .capability_invocation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.capability_delegation.is_empty() {
-            did_doc_norm.capability_delegation = self
-                .capability_delegation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.assertion_method.is_empty() {
-            did_doc_norm.assertion_method = self
-                .assertion_method
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.key_agreement.is_empty() {
-            did_doc_norm.key_agreement = self
-                .key_agreement
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        did_doc_norm
     }
-     */
+}
+
+/// The helper parses the supplied DID doc as string and returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+///
+/// Parsing failure is denoted by returning [`DidSidekicksError::DeserializationFailed`].
+///
+/// The key lookup is always done across all verification methods (`verificationMethod`) and
+/// verification relationships
+/// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+///
+/// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidSidekicksError> {
+    let doc = match serde_json::from_str::<DidDocNormalized>(did_doc.as_str()) {
+        Ok(doc) => match doc.to_did_doc() {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+        Err(_) => match serde_json::from_str::<DidDoc>(did_doc.as_str()) {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+    };
+
+    doc.get_key(key_id)
 }
 
 impl DidDocExtended {

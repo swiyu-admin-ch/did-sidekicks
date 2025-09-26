@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 namespace did_sidekicks {
+    /// The helper parses the supplied DID doc as string and returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
+    ///
+    /// Parsing failure is denoted by returning `DidSidekicksError::DeserializationFailed`.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
+    [Throws=DidSidekicksError]
+    Jwk get_key_from_did_doc(string did_doc, string key_id);
 };
+
 
 /// The error accompanying this crate.
 [Error]
@@ -15,7 +27,9 @@ enum DidSidekicksError {
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof",
     /// Invalid DID method parameter
-    "InvalidDidMethodParameter"
+    "InvalidDidMethodParameter",
+    /// Key not found
+    "KeyNotFound"
 };
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
@@ -107,6 +121,14 @@ interface DidDoc {
     sequence<VerificationMethod> get_assertion_method();
     sequence<string> get_controller();
     boolean get_deactivated();
+    /// Returns a cryptographic public key (`Jwk`) referenced by the supplied `key_id`, if any.
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, `DidSidekicksError::KeyNotFound` is returned.
+    [Throws=DidSidekicksError]
+    Jwk get_key(string key_id);
 };
 
 /// A simple container for both `DidDoc` and the related collection of `DidMethodParameter` objects.
