@@ -339,30 +339,54 @@ impl DidDoc {
         Ok(did_doc)
     }
 
-    /// returns the JWK key with the specified id
-    pub fn get_key_with_id(&self, id: String) -> Result<Jwk, DidSidekicksError> {
-        let methods = self.verification_method.iter();
-        let methods = methods.chain(self.authentication.iter());
-        let methods = methods.chain(self.capability_invocation.iter());
-        let methods = methods.chain(self.capability_delegation.iter());
-        let methods = methods.chain(self.assertion_method.iter());
-        let mut methods = methods.chain(self.key_agreement.iter());
-
-        let result = methods.find(|&key| key.id.ends_with(format!("#{}", id).as_str()));
-        match result {
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    pub fn get_key(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
+        // A JWK referenced by the supplied key_id might be anywhere in this DID doc
+        match self
+            .verification_method
+            .iter()
+            .chain(self.authentication.iter())
+            .chain(self.capability_invocation.iter())
+            .chain(self.capability_delegation.iter())
+            .chain(self.assertion_method.iter())
+            .chain(self.key_agreement.iter())
+            .find(|&key| key.id.ends_with(format!("#{}", key_id).as_str()))
+        {
             Some(key) => match &key.public_key_jwk {
-                Some(jwk) => Ok(jwk.clone()),
+                Some(jwk) => match &jwk.kid {
+                    Some(kid) => {
+                        if kid.as_str() == key_id {
+                            return Ok(jwk.to_owned());
+                        }
+                        Err(DidSidekicksError::KeyNotFound(key_id.to_string()))
+                    }
+                    None => Ok(jwk.to_owned()),
+                },
                 None => Err(DidSidekicksError::KeyNotFound(
-                    "Found but no key".to_string(),
+                    "Non-existing key referenced".to_string()
                 )),
             },
-            None => Err(DidSidekicksError::KeyNotFound(id.to_string())),
+            None => Err(DidSidekicksError::KeyNotFound(key_id.to_string())),
         }
     }
 }
 
-/// parses the provided did doc and returns the JWK key with the specified id.
-pub fn get_key_with_id_from_did_doc(did_doc: String, id: String) -> Result<Jwk, DidSidekicksError> {
+/// The helper parses the supplied DID doc as string and returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+///
+/// Parsing failure is denoted by returning [`DidSidekicksError::DeserializationFailed`].
+///
+/// The key lookup is always done across all verification methods (`verificationMethod`) and
+/// verification relationships
+/// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+///
+/// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidSidekicksError> {
     let doc = match serde_json::from_str::<DidDocNormalized>(did_doc.as_str()) {
         Ok(doc) => match doc.to_did_doc() {
             Ok(doc) => doc,
@@ -374,7 +398,7 @@ pub fn get_key_with_id_from_did_doc(did_doc: String, id: String) -> Result<Jwk, 
         },
     };
 
-    doc.get_key_with_id(id)
+    doc.get_key(key_id)
 }
 
 impl DidDocExtended {

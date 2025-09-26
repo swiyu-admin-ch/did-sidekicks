@@ -40,7 +40,7 @@ mod test {
     use rand::distributions::Alphanumeric;
     use rand::Rng;
     use rstest::{fixture, rstest};
-    use serde_json::json;
+    use serde_json::{json, Value};
     use std::vec;
 
     #[fixture]
@@ -151,11 +151,11 @@ mod test {
         Ok(())
     }
 
-    /// A rather trivial assertion helper around TrustDidWebError.
-    pub fn assert_trust_did_web_error<T>(
+    /// A rather trivial assertion helper around DidSidekicksError.
+    pub fn assert_error<T>(
         res: Result<T, DidSidekicksError>,
         expected_kind: DidSidekicksErrorKind,
-        _error_contains: &str,
+        error_contains: &str,
     ) {
         assert!(res.is_err());
         let err = res.err();
@@ -163,13 +163,13 @@ mod test {
         let err = err.unwrap();
         assert_eq!(err.kind(), expected_kind);
 
-        /*let err_to_string = err.to_string();
+        let err_to_string = err.to_string();
         assert!(
-            err_to_string.contains(_error_contains),
+            err_to_string.contains(error_contains),
             "expected '{}' is not mentioned in '{}'",
-            _error_contains,
+            error_contains,
             err_to_string
-        );*/
+        );
     }
 
     #[rstest]
@@ -257,74 +257,176 @@ mod test {
 
     #[rstest]
     #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ], "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ], "verificationMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } }, { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ] }"#, 
-        "auth-key-01",
+        json!({
+            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ],
+            "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ],
+            "verificationMethod": [{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "auth-key-01",
+                        "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                        "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                    }
+                },{
+                    "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+                    "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                    "type": "JsonWebKey2020",
+                    "publicKeyJwk": {
+                        "kty": "EC",
+                        "crv": "P-256",
+                        "kid": "assert-key-02",
+                        "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
+                        "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
+                    }
+            }]
+        }),
+        vec!("auth-key-01", "assert-key-02"),
     )]
     #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } } ], "assertionMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ], "verificationMethod": [ ] }"#, 
-        "auth-key-01",
+        json!({
+            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "authentication": [{
+                "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                "type": "JsonWebKey2020",
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "kid": "auth-key-01",
+                    "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                    "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                }
+            }],
+            "assertionMethod": [{
+                "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+                "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                "type": "JsonWebKey2020",
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv":
+                    "P-256",
+                    "kid": "assert-key-02",
+                    "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
+                    "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
+                }
+            }],
+            "verificationMethod": [ ]
+        }),
+        vec!("auth-key-01", "assert-key-02"),
     )]
+    // The example taken from: https://www.w3.org/TR/did-1.0/#example-did-document-with-different-verification-method-types
     #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ], "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ], "verificationMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } }, { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ] }"#, 
-        "assert-key-02",
-    )]
-    #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } } ], "assertionMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ], "verificationMethod": [ ] }"#, 
-        "assert-key-02",
+        json!({
+          "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+          "id": "did:example:123",
+          "verificationMethod": [{
+              "id": "did:example:123#key-3",
+              "type": "JsonWebKey2020",
+              "controller": "did:example:123",
+              "publicKeyJwk": {
+                "kty": "EC", // external (property name)
+                "crv": "P-256", // external (property name)
+                "x": "Er6KSSnAjI70ObRWhlaMgqyIOQYrDJTE94ej5hybQ2M", // external (property name)
+                "y": "pPVzCOTJwgikPjuUE6UebfZySqEJ0ZtsWFpj7YSPGEk" // external (property name)
+                // "kid" is OPTIONAL (https://www.rfc-editor.org/rfc/rfc7517#section-4.5)
+              }
+          }]
+        }),
+        vec!("key-3"),
     )]
     // cases to test
     // - did doc with jwks directly (DidDoc)
     // - did doc with jwks indirectly (DidDocNormalized)
     // - did doc invalid
-    fn test_get_key_with_id_from_did_doc(#[case] did_doc: String, #[case] key: String) {
-        let result = did_doc::get_key_with_id_from_did_doc(did_doc, key.clone());
-        assert!(result.is_ok());
-        let result = result.unwrap();
-        assert!(result.kid.is_some());
-        let kid = result.kid.unwrap();
-        assert!(kid.eq(&key));
+    fn test_get_key_from_did_doc(#[case] did_doc: Value, #[case] key_ids: Vec<&str>) {
+        key_ids.iter().for_each(|key_id| {
+            let result = did_doc::get_key_from_did_doc(did_doc.to_string(), key_id.to_string());
+            assert!(result.is_ok());
+            // CAUTION "kid" is OPTIONAL (https://www.rfc-editor.org/rfc/rfc7517#section-4.5)
+            match result.unwrap().kid {
+                None => {} // legit
+                Some(kid) => {
+                    assert!(kid.eq(key_id.to_string().as_str()));
+                }
+            }
+        });
     }
 
     #[rstest]
     #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ], "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ], "verificationMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } }, { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ] }"#, 
-        "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-0",
+        json!({
+            "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ],
+            "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+            "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ],
+            "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ],
+            "verificationMethod": [{
+                "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                "type": "JsonWebKey2020",
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "kid": "auth-key-01",
+                    "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                    "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                }
+            },{
+                "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02",
+                "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                "type": "JsonWebKey2020",
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "kid": "assert-key-02",
+                    "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8",
+                    "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0"
+                }
+            }]
+        }),
+        vec!("invalid_key", "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-0"),
         DidSidekicksErrorKind::KeyNotFound,
+        "JWK not found in the DID document"
     )]
-    #[case(
-        r#"{ "@context": [ "https://www.w3.org/ns/did/v1", "https://w3id.org/security/jwk/v1" ], "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "authentication": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01" ], "assertionMethod": [ "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02" ], "verificationMethod": [ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "auth-key-01", "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE", "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y" } }, { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#assert-key-02", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020", "publicKeyJwk": { "kty": "EC", "crv": "P-256", "kid": "assert-key-02", "x": "Ja4P63oUfaUageuu9O_6kOHT6bLe5D4myacZpEICwC8", "y": "A4JwAyrpKxtsNLX50A0pQ_4G2AYO-NJw0dzne11xUj0" } } ] }"#, 
-        "invalid_key",
-        DidSidekicksErrorKind::KeyNotFound,
-    )]
-    #[case(
-        r#"{ }"#, 
-        "auth-key-01",
-        DidSidekicksErrorKind::DeserializationFailed,
-    )]
-    #[case(
-        r#"[]"#, 
-        "auth-key-01",
-        DidSidekicksErrorKind::DeserializationFailed,
-    )]
+    #[case(json!({}), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "The supplied did doc is invalid")]
+    #[case(json!([]), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "The supplied did doc is invalid")]
     #[case(
         // currently returns KeyNotFound, should return InvalidDidDoc or DeserializationFailed since the provided JSON is not a valid did doc
-        r#"{"@context":[], "id":"", "verificationMethod":[ { "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01", "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085", "type": "JsonWebKey2020"} ] }"#, 
-        "auth-key-01",
-        DidSidekicksErrorKind::KeyNotFound, 
+        json!({
+            "@context":[],
+            "id":"",
+            "verificationMethod":[{
+                "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
+                "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
+                "type": "JsonWebKey2020"
+            }]
+        }),
+        vec!("auth-key-01"),
+        DidSidekicksErrorKind::KeyNotFound,
+        "JWK not found in the DID document: Non-existing key referenced"
     )]
     // cases to test
     // - did doc with jwks directly (DidDoc)
     // - did doc with jwks indirectly (DidDocNormalized)
     // - did doc invalid
-    fn test_get_key_with_id_from_did_dod_fail(
-        #[case] did_doc: String,
-        #[case] key: String,
-        #[case] error_kind: DidSidekicksErrorKind,
+    fn test_get_key_from_did_doc_failure(
+        #[case] did_doc: Value,
+        #[case] key_ids: Vec<&str>,
+        #[case] expected_error_kind: DidSidekicksErrorKind,
+        #[case] error_contains: &str,
     ) {
-        let result = did_doc::get_key_with_id_from_did_doc(did_doc, key.clone());
-        let Err(err) = result else {
-            panic!("Expected error but got okay");
-        };
-        assert_eq!(err.kind(), error_kind);
+        key_ids.iter().for_each(|key_id| {
+            assert_error(
+                did_doc::get_key_from_did_doc(did_doc.to_string(), key_id.to_string()),
+                expected_error_kind,
+                error_contains,
+            );
+        })
     }
 }

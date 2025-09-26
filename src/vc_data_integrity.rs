@@ -83,7 +83,7 @@ impl CryptoSuiteProofOptions {
     /// - created: \<current datetime\>
     /// - proof_purpose: "authentication"
     pub(crate) fn default() -> Self {
-        CryptoSuiteProofOptions {
+        Self {
             proof_type: "DataIntegrityProof".to_string(),
             crypto_suite: CryptoSuiteType::EddsaJcs2022,
             created: Utc::now(), // fallback to current datetime
@@ -213,7 +213,7 @@ impl DataIntegrityProof {
                 JsonString(ref s) => {
                     if s != "authentication" && s != "assertionMethod" {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                            "Unsupported proof's proofPurpose. Expected 'authentication'"
+                            "Unsupported proof's proofPurpose. Expected 'authentication' or 'assertionMethod'"
                                 .to_string(),
                         ));
                     }
@@ -423,8 +423,6 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         proof: &DataIntegrityProof,
         doc_hash: &str,
     ) -> Result<(), DidSidekicksError> {
-        let proof_value = &proof.proof_value;
-
         let created = proof
             .created
             .to_rfc3339_opts(SecondsFormat::Secs, true)
@@ -458,7 +456,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             }
         };
         let hash_data = proof_hash + doc_hash;
-        let signature = Ed25519Signature::from_multibase(proof_value.as_str())?;
+        let signature = Ed25519Signature::from_multibase(proof.proof_value.as_str())?;
         match self.verifying_key {
             Some(ref verifying_key) => {
                 let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(hash_data) {
@@ -482,7 +480,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
 #[cfg(test)]
 mod test {
     use crate::errors::DidSidekicksErrorKind;
-    use crate::test::assert_trust_did_web_error;
+    use crate::test::assert_error;
     use crate::vc_data_integrity::DataIntegrityProof;
     use rstest::rstest;
 
@@ -527,7 +525,7 @@ mod test {
     )]
     // invalid proof challenge
     #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\"}]",
-        "Missing proof's challenge parameter."
+        "Missing proofValue parameter. Expected a proofValue of type string."
     )]
     #[case("[{\"type\":\"DataIntegrityProof\", \"cryptosuite\":\"eddsa-jcs-2022\", \"created\":\"2012-12-12T12:12:12Z\", \"verificationMethod\": \"did:key:123\", \"proofPurpose\":\"authentication\", \"challenge\":[false, 2]}]",
         "Wrong format of proof's challenge parameter"
@@ -543,7 +541,7 @@ mod test {
         #[case] input_str: String,
         #[case] error_string: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        assert_trust_did_web_error(
+        assert_error(
             DataIntegrityProof::from(input_str),
             DidSidekicksErrorKind::InvalidIntegrityProof,
             error_string,

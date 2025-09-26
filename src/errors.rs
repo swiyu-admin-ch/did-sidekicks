@@ -23,8 +23,8 @@ pub enum DidSidekicksError {
     /// Invalid DID method parameter
     #[error("invalid DID method parameter: {0}")]
     InvalidDidMethodParameter(String),
-    /// No verification with specified key found in did doc
-    #[error("key '{0}' not found in the DID document")]
+    /// JWK not found in the DID document
+    #[error("JWK not found in the DID document: {0}")]
     KeyNotFound(String),
 }
 
