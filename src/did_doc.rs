@@ -364,15 +364,13 @@ impl DidDoc {
                         if kid.as_str() == key_id {
                             return Ok(jwk.to_owned());
                         }
-                        Err(DidSidekicksError::KeyNotFound(key_id.to_string()))
+                        Err(DidSidekicksError::NonExistingKeyReferenced(kid.into()))
                     }
                     None => Ok(jwk.to_owned()),
                 },
-                None => Err(DidSidekicksError::KeyNotFound(
-                    "Non-existing key referenced".to_string()
-                )),
+                None => Err(DidSidekicksError::NonExistingKeyReferenced(key_id)),
             },
-            None => Err(DidSidekicksError::KeyNotFound(key_id.to_string())),
+            None => Err(DidSidekicksError::KeyNotFound(key_id)),
         }
     }
 }

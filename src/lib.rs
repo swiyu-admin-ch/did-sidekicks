@@ -390,26 +390,37 @@ mod test {
                 }
             }]
         }),
-        vec!("invalid_key", "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-0"),
+        vec!(
+            "invalid_key",
+            "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-0"
+        ),
         DidSidekicksErrorKind::KeyNotFound,
-        "JWK not found in the DID document"
+        "no such JWK in the DID document"
     )]
-    #[case(json!({}), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "The supplied did doc is invalid")]
-    #[case(json!([]), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "The supplied did doc is invalid")]
+    #[case(json!({}), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "the supplied DID document is invalid")]
+    #[case(json!([]), vec!("irrelevant"), DidSidekicksErrorKind::DeserializationFailed, "the supplied DID document is invalid")]
     #[case(
-        // currently returns KeyNotFound, should return InvalidDidDoc or DeserializationFailed since the provided JSON is not a valid did doc
+        // currently returns KeyNotFound, should return InvalidDidDoc or DeserializationFailed since the provided JSON is not a valid DID doc
         json!({
-            "@context":[],
-            "id":"",
+            "@context": [],
+            "id": "",
             "verificationMethod":[{
                 "id": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085#auth-key-01",
                 "controller": "did:tdw:QmNvrTSTX4ix7ykYHrdf4rsN9MNJEy6c8TMk6C4uPjY1h9:identifier-reg.trust-infra.swiyu-int.admin.ch:api:v1:did:18fa7c77-9dd1-4e20-a147-fb1bec146085",
-                "type": "JsonWebKey2020"
+                "type": "JsonWebKey2020",
+                // CAUTION The same effect as omitting "publicKeyJwk" altogether
+                "publicKeyJwk": {
+                    "kty": "EC",
+                    "crv": "P-256",
+                    "kid": "nothing-but-auth-key-01",
+                    "x": "3-xR-ApvKYCKtXxjvypxIb4tHJSUTHCl0uUYVAvP6sE",
+                    "y": "jkQdXwStFmrJjHuWw8PE_AG43c4OQwd6-Rkr4sPiC7Y"
+                }
             }]
         }),
         vec!("auth-key-01"),
-        DidSidekicksErrorKind::KeyNotFound,
-        "JWK not found in the DID document: Non-existing key referenced"
+        DidSidekicksErrorKind::NonExistingKeyReferenced,
+        "non-existing key referenced in the DID document"
     )]
     // cases to test
     // - did doc with jwks directly (DidDoc)

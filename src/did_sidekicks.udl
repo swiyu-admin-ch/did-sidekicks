@@ -20,16 +20,18 @@ namespace did_sidekicks {
 enum DidSidekicksError {
     /// Failed to serialize DID document (to JSON).
     "SerializationFailed",
-    /// The supplied did doc is invalid or contains an argument which isn't part of the did specification/recommendation.
+    /// The supplied DID document is invalid or contains an argument which isn't part of the did specification/recommendation.
     "DeserializationFailed",
     /// Invalid DID document.
     "InvalidDidDocument",
     /// Invalid DID log integration proof.
     "InvalidDataIntegrityProof",
-    /// Invalid DID method parameter
+    /// Invalid DID method parameter.
     "InvalidDidMethodParameter",
-    /// Key not found
-    "KeyNotFound"
+    /// No such JWK in the DID document.
+    "KeyNotFound",
+    /// Non-existing key referenced in the DID document.
+    "NonExistingKeyReferenced"
 };
 
 /// A generic DID method parameter as seen from the perspective of a JSON deserializer.
