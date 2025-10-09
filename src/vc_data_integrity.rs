@@ -9,9 +9,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::{
     json, Value::Array as JsonArray, Value::Null as JsonNull, Value::String as JsonString,
 };
-use std::ops::Deref;
+use std::ops::Deref as _;
 
 #[derive(Clone, Debug)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum CryptoSuiteType {
     Bbs2023,
     EcdsaRdfc2019,
@@ -22,14 +26,15 @@ pub enum CryptoSuiteType {
 }
 
 impl std::fmt::Display for CryptoSuiteType {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            CryptoSuiteType::Bbs2023 => write!(f, "bbs-2023"),
-            CryptoSuiteType::EcdsaRdfc2019 => write!(f, "ecdsa-rdfc-2019"),
-            CryptoSuiteType::EcdsaJcs2019 => write!(f, "ecdsa-jcs-2019"),
-            CryptoSuiteType::EcdsaSd2019 => write!(f, "ecdsa-sd-2019"),
-            CryptoSuiteType::EddsaRdfc2022 => write!(f, "eddsa-rdfc-2022"),
-            CryptoSuiteType::EddsaJcs2022 => write!(f, "eddsa-jcs-2022"),
+        match *self {
+            Self::Bbs2023 => write!(f, "bbs-2023"),
+            Self::EcdsaRdfc2019 => write!(f, "ecdsa-rdfc-2019"),
+            Self::EcdsaJcs2019 => write!(f, "ecdsa-jcs-2019"),
+            Self::EcdsaSd2019 => write!(f, "ecdsa-sd-2019"),
+            Self::EddsaRdfc2022 => write!(f, "eddsa-rdfc-2022"),
+            Self::EddsaJcs2022 => write!(f, "eddsa-jcs-2022"),
         }
     }
 }
@@ -50,6 +55,7 @@ impl CryptoSuiteProofOptions {
     /// The only (super-potent) non-empty constructor.
     ///
     /// As nearly all arguments are optional, see [`Self::default()`] constructor for default values.
+    #[inline]
     pub fn new(
         crypto_suite: Option<CryptoSuiteType>,
         created: Option<DateTime<Utc>>,
@@ -82,13 +88,14 @@ impl CryptoSuiteProofOptions {
     /// - crypto_suite: "eddsa-jcs-2022"
     /// - created: \<current datetime\>
     /// - proof_purpose: "authentication"
+    #[expect(clippy::single_call_fn, reason = "..")]
     pub(crate) fn default() -> Self {
         Self {
-            proof_type: "DataIntegrityProof".to_string(),
+            proof_type: "DataIntegrityProof".to_owned(),
             crypto_suite: CryptoSuiteType::EddsaJcs2022,
             created: Utc::now(), // fallback to current datetime
             verification_method: String::from(""),
-            proof_purpose: "authentication".to_string(),
+            proof_purpose: "authentication".to_owned(),
             context: None,
             challenge: Some(String::from("")),
         }
@@ -120,12 +127,13 @@ pub struct DataIntegrityProof {
 }
 impl DataIntegrityProof {
     /// The non-empty parsing constructor featuring validation in terms of supported type/proofPurpose/cryptosuite
+    #[inline]
     pub fn from(json: String) -> Result<Self, DidSidekicksError> {
         let value = match serde_json::from_str(&json) {
             Ok(JsonArray(entry)) => {
                 if entry.len() > 1 {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "A single proof is currently supported.".to_string(),
+                        "A single proof is currently supported.".to_owned(),
                     ));
                 }
 
@@ -133,7 +141,7 @@ impl DataIntegrityProof {
                     Some(first) => first.clone(),
                     None => {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                            "Empty proof array detected.".to_string(),
+                            "Empty proof array detected.".to_owned(),
                         ))
                     }
                 }
@@ -145,23 +153,23 @@ impl DataIntegrityProof {
             }
             _ => {
                 return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Malformed proof format, expected single-element JSON array".to_string(),
+                    "Malformed proof format, expected single-element JSON array".to_owned(),
                 ))
             }
         };
-        Ok(DataIntegrityProof {
+        Ok(Self {
             proof_type: match value["type"] {
                 JsonString(ref s) => {
                     if s != "DataIntegrityProof" {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                            "Unsupported proof's type. Expected 'DataIntegrityProof'".to_string(),
+                            "Unsupported proof's type. Expected 'DataIntegrityProof'".to_owned(),
                         ));
                     }
                     s.to_string()
                 }
                 _ => {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "Missing proof's type".to_string(),
+                        "Missing proof's type".to_owned(),
                     ))
                 }
             },
@@ -173,11 +181,11 @@ impl DataIntegrityProof {
                             CryptoSuiteType::EddsaJcs2022
                         )));
                     }
-                    s.to_string()
+                    s.to_owned()
                 }
                 _ => {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "Missing proof's cryptosuite".to_string(),
+                        "Missing proof's cryptosuite".to_owned(),
                     ))
                 }
             },
@@ -190,7 +198,7 @@ impl DataIntegrityProof {
                     ))
                 },
                 _ =>  return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Missing proof's creation datetime.".to_string(),
+                    "Missing proof's creation datetime.".to_owned(),
                 )),
             },
             verification_method: match value["verificationMethod"] {
@@ -198,10 +206,10 @@ impl DataIntegrityProof {
                     if !s.starts_with("did:key:") {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Unsupported proof's verificationMethod. Expected prefix 'did:key:'"
-                                .to_string(),
+                                .to_owned(),
                         ));
                     }
-                    s.to_string()
+                    s.to_owned()
                 }
                 _ => {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
@@ -214,14 +222,14 @@ impl DataIntegrityProof {
                     if s != "authentication" && s != "assertionMethod" {
                         return Err(DidSidekicksError::InvalidDataIntegrityProof(
                             "Unsupported proof's proofPurpose. Expected 'authentication' or 'assertionMethod'"
-                                .to_string(),
+                                .to_owned(),
                         ));
                     }
-                    s.to_string()
+                    s.to_owned()
                 }
                 _ => {
                     return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "Missing proof's proofPurpose".to_string(),
+                        "Missing proof's proofPurpose".to_owned(),
                     ))
                 }
             },
@@ -236,36 +244,37 @@ impl DataIntegrityProof {
                                 }
                                 _ => Err(DidSidekicksError::InvalidDataIntegrityProof(
                                     "Invalid type of 'context' entry, expected a string."
-                                        .to_string(),
+                                        .to_owned(),
                                 )),
                             })?,
                     )
                 }
                 JsonNull => None,
                 _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Invalid format of 'context' entry, expected array of strings.".to_string(),
+                    "Invalid format of 'context' entry, expected array of strings.".to_owned(),
                 )),
             },
             challenge: match value["challenge"] {
-                JsonString(ref s) => Some(s.to_string()),
+                JsonString(ref s) => Some(s.to_owned()),
                 JsonNull => None,
                 _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_string(),
+                    "Wrong format of proof's challenge parameter. Expected a challenge of type string.".to_owned(),
                 ))
             },
             proof_value: match value["proofValue"] {
-                JsonString(ref s) => s.to_string(),
+                JsonString(ref s) => s.to_owned(),
                 JsonNull => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Missing proofValue parameter. Expected a proofValue of type string.".to_string(),
+                    "Missing proofValue parameter. Expected a proofValue of type string.".to_owned(),
                 )),
                 _ => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "Wrong format of proofValue parameter. Expected a proofValue of type string.".to_string(),
+                    "Wrong format of proofValue parameter. Expected a proofValue of type string.".to_owned(),
                 ))
             },
         })
     }
 
     /// Construct a serde_json::Value from this DataIntegrityProof
+    #[inline]
     pub fn json_value(&self) -> Result<serde_json::Value, DidSidekicksError> {
         let mut value = match serde_json::to_value(self) {
             Ok(v) => v,
@@ -276,25 +285,23 @@ impl DataIntegrityProof {
             }
         };
 
-        value["created"] = serde_json::Value::String(
-            self.created
-                .to_rfc3339_opts(SecondsFormat::Secs, true)
-                .to_string(),
-        );
+        value["created"] =
+            serde_json::Value::String(self.created.to_rfc3339_opts(SecondsFormat::Secs, true));
         Ok(value)
     }
 
     /// Delivers first available update key
+    #[inline]
     pub fn extract_update_key(&self) -> Result<String, DidSidekicksError> {
         if self.verification_method.starts_with("did:key:") {
             let hash_separated = self.verification_method.to_owned().replace("did:key:", "");
             let update_key_split = hash_separated.split('#').collect::<Vec<&str>>();
             if update_key_split.is_empty() {
                 return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                    "A proof's verificationMethod must be #-delimited".to_string(),
+                    "A proof's verificationMethod must be #-delimited".to_owned(),
                 ));
             }
-            Ok(update_key_split[0].to_string())
+            Ok(update_key_split[0].to_owned())
         } else {
             Err(DidSidekicksError::InvalidDataIntegrityProof(
                 format!("Unsupported proof's verificationMethod (only 'did:key' is currently supported): {}", self.verification_method)
@@ -303,7 +310,8 @@ impl DataIntegrityProof {
     }
 }
 
-/// Is main entry point for proof generation and validation of a given verifiable credential
+/// This is the main entry point for proof generation and validation of a given verifiable credential.
+///
 /// Function in this class are based on algorithm section in the vc-data-integrity spec
 /// https://www.w3.org/TR/vc-data-integrity/#algorithms
 pub trait VCDataIntegrity {
@@ -329,6 +337,7 @@ pub struct EddsaJcs2022Cryptosuite {
 // NOTE Only https://www.w3.org/TR/vc-di-eddsa/#eddsa-jcs-2022 is currently supported
 impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     // See https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    #[inline]
     fn add_proof(
         &self,
         unsecured_document: &serde_json::Value,
@@ -345,14 +354,11 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
         }
         if options.proof_type != "DataIntegrityProof" {
             return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_string(),
+                "Unsupported proof's type. Only 'DataIntegrityProof' is supported".to_owned(),
             ));
         }
 
-        let created = options
-            .created
-            .to_rfc3339_opts(SecondsFormat::Secs, true)
-            .to_string();
+        let created = options.created.to_rfc3339_opts(SecondsFormat::Secs, true);
 
         // See https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
         let mut proof_without_proof_value = json!({
@@ -403,7 +409,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
             Some(signing_key) => signing_key.sign_bytes(decoded_hex_data.deref()),
             None => return Err(DidSidekicksError::InvalidDataIntegrityProof(
                 "Invalid eddsa cryptosuite. Signing key is missing but required for proof creation"
-                    .to_string(),
+                    .to_owned(),
             )),
         };
         //let signature_hex = hex::encode(signature.signature.to_bytes()); // checkpoint
@@ -418,15 +424,13 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     // See https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     // See https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
 
+    #[inline]
     fn verify_proof(
         &self,
         proof: &DataIntegrityProof,
         doc_hash: &str,
     ) -> Result<(), DidSidekicksError> {
-        let created = proof
-            .created
-            .to_rfc3339_opts(SecondsFormat::Secs, true)
-            .to_string();
+        let created = proof.created.to_rfc3339_opts(SecondsFormat::Secs, true);
 
         // CAUTION Beware that only serde_json::json macro is able to serialize proof.created field properly (if used directly)!
         //         (thanks to #[serde(with = "ts_seconds")])
@@ -462,7 +466,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
                 let hash_data_decoded: [u8; 64] = match hex::FromHex::from_hex(hash_data) {
                     Ok(decoded_hash) => decoded_hash,
                     Err(_) => return Err(DidSidekicksError::InvalidDataIntegrityProof(
-                        "Cannot decode hash value from hex.".to_string()
+                        "Cannot decode hash value from hex.".to_owned()
                     ))
                 };
                 // Strictly verify a signature on a message with this keypair's public key.
@@ -471,7 +475,7 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
                     .map_err(|err| DidSidekicksError::InvalidDataIntegrityProof(format!("{err}")))
             }
             None => Err(DidSidekicksError::InvalidDataIntegrityProof(
-                "Invalid eddsa cryptosuite. Verifying key is missing but required for proof verification".to_string()
+                "Invalid eddsa cryptosuite. Verifying key is missing but required for proof verification".to_owned()
             ))
         }
     }

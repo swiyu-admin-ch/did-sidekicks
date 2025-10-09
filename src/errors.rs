@@ -5,7 +5,11 @@
 /// Yet another UniFFI-compliant error.
 ///
 /// Resembles ssi::dids::resolution::Error
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidSidekicksError {
     /// Failed to serialize ID document (to JSON)
     #[error("failed to serialize DID document (to JSON): {0}")]
@@ -33,8 +37,9 @@ pub enum DidSidekicksError {
 
 impl DidSidekicksError {
     /// Returns the error kind.
+    #[inline]
     pub fn kind(&self) -> DidSidekicksErrorKind {
-        match self {
+        match *self {
             Self::SerializationFailed(_) => DidSidekicksErrorKind::SerializationFailed,
             Self::DeserializationFailed(_) => DidSidekicksErrorKind::DeserializationFailed,
             Self::InvalidDidDocument(_) => DidSidekicksErrorKind::InvalidDidDocument,
@@ -50,6 +55,10 @@ impl DidSidekicksError {
 ///
 /// Each [`DidSidekicksError`] has a kind provided by the [`DidSidekicksErrorKind::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidSidekicksErrorKind {
     SerializationFailed,
     DeserializationFailed,
@@ -64,6 +73,10 @@ pub enum DidSidekicksErrorKind {
 ///
 /// Yet another UniFFI-compliant error.
 #[derive(Debug, thiserror::Error, PartialEq)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidResolverError {
     /// Invalid method-specific identifier
     #[error("invalid method specific identifier: {0}")]
@@ -88,8 +101,9 @@ pub enum DidResolverError {
 
 impl DidResolverError {
     /// Returns the error kind.
+    #[inline]
     pub fn kind(&self) -> DidResolverErrorKind {
-        match self {
+        match *self {
             Self::InvalidMethodSpecificId(_) => DidResolverErrorKind::InvalidMethodSpecificId,
             Self::SerializationFailed(_) => DidResolverErrorKind::SerializationFailed,
             Self::DeserializationFailed(_) => DidResolverErrorKind::DeserializationFailed,
@@ -104,6 +118,10 @@ impl DidResolverError {
 ///
 /// Each [`DidResolverError`] has a kind provided by the [`DidResolverErrorErrorKind::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidResolverErrorKind {
     InvalidMethodSpecificId,
     SerializationFailed,
