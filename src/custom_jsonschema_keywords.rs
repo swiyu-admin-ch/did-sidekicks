@@ -1,25 +1,28 @@
 // SPDX-License-Identifier: MIT
 
 use chrono::{DateTime, Local};
+use core::cmp::Ordering;
 use jsonschema::{
     paths::{LazyLocation, Location},
     Keyword, ValidationError,
 };
 use serde_json::{Map, Value};
-use std::cmp::Ordering;
 
 /// Yet another custom [`Keyword`] trait implementation able to validate if a JSON array represents
 /// a regular `didwebvh` DID log entry (as defined by https://identity.foundation/didwebvh/v0.3/#overview).
 ///
 /// This [`Keyword`] trait implementation validates instances according to https://identity.foundation/didwebvh/v0.3/#overview
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidLogEntryKeyword;
 
 impl DidLogEntryKeyword {
     /// The constant required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
     pub const KEYWORD_NAME: &'static str = "did-log-entry";
 
-    #[allow(clippy::result_large_err)] // "the `Err`-variant is at least 224 bytes" (default: 128)
     /// The factory method required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
+    #[inline]
+    #[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
+    #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
     pub fn factory<'a>(
         _parent: &'a Map<String, Value>,
         value: &'a Value,
@@ -30,7 +33,7 @@ impl DidLogEntryKeyword {
             .as_bool()
             .is_some_and(|_| path.to_string().ends_with(Self::KEYWORD_NAME))
         {
-            Ok(Box::new(DidLogEntryKeyword))
+            Ok(Box::new(Self))
         } else {
             Err(ValidationError::custom(
                 Location::new(),
@@ -50,12 +53,14 @@ impl Keyword for DidLogEntryKeyword {
     /// 3. A set of `parameters` that impact the processing of the current and future log entries. Example parameters are the version of the `did:tdw` specification and hash algorithm being used as well as the SCID and update key(s).
     /// 4. The new version of the DIDDoc as either a `value` (the full document) or a `patch` derived using JSON Patch to update the new version from the previous entry.
     /// 5. A Data Integrity (DI) proof across the entry, signed by a DID authorized to update the DIDDoc, using the `versionId` as the challenge.
+    #[inline]
+    #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
     fn validate<'i>(
         &self,
         instance: &'i Value,
         location: &LazyLocation,
     ) -> Result<(), ValidationError<'i>> {
-        if let Value::Array(_) = instance {
+        if let Value::Array(_) = *instance {
             if self.is_valid(instance) {
                 Ok(())
             } else {
@@ -85,26 +90,28 @@ impl Keyword for DidLogEntryKeyword {
     /// 3. A set of `parameters` that impact the processing of the current and future log entries. Example parameters are the version of the `did:tdw` specification and hash algorithm being used as well as the SCID and update key(s).
     /// 4. The new version of the DIDDoc as either a `value` (the full document) or a `patch` derived using JSON Patch to update the new version from the previous entry.
     /// 5. A Data Integrity (DI) proof across the entry, signed by a DID authorized to update the DIDDoc, using the `versionId` as the challenge.
+    #[inline]
     fn is_valid(&self, instance: &Value) -> bool {
         // "each DID log entry includes a JSON array of five items"
         instance.as_array().is_some_and(|inst| {
             inst.len() == 5
-                && inst
-                    .first()
-                    .is_some_and(|v| v.is_string() && v.as_str().is_some_and(|s| !s.is_empty()))
-                && inst
-                    .get(1)
-                    .is_some_and(|v| v.is_string() && v.as_str().is_some_and(|s| !s.is_empty()))
-                && inst.get(2).is_some_and(|v| v.is_object())
-                && inst
-                    .get(3)
-                    .is_some_and(|v| v.is_object() && v.as_object().is_some_and(|m| !m.is_empty()))
-                && inst.get(4).is_some_and(|v| {
-                    v.is_array()
-                        && v.as_array().is_some_and(|vec| {
+                && inst.first().is_some_and(|val| {
+                    val.is_string() && val.as_str().is_some_and(|str| !str.is_empty())
+                })
+                && inst.get(1).is_some_and(|val| {
+                    val.is_string() && val.as_str().is_some_and(|str| !str.is_empty())
+                })
+                && inst.get(2).is_some_and(|val| val.is_object())
+                && inst.get(3).is_some_and(|val| {
+                    val.is_object() && val.as_object().is_some_and(|map| !map.is_empty())
+                })
+                && inst.get(4).is_some_and(|val| {
+                    val.is_array()
+                        && val.as_array().is_some_and(|vec| {
                             !vec.is_empty()
-                                && vec.iter().all(|t| {
-                                    t.is_object() && t.as_object().is_some_and(|m| !m.is_empty())
+                                && vec.iter().all(|vec_val| {
+                                    vec_val.is_object()
+                                        && vec_val.as_object().is_some_and(|map| !map.is_empty())
                                 })
                         })
                 })
@@ -112,16 +119,21 @@ impl Keyword for DidLogEntryKeyword {
     }
 }
 
-/// Yet another custom [`Keyword`] trait implementation able to validate the rule in regard
-/// to `versionTime` DID log entry item (as defined by https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check)
+/// Yet another custom [`Keyword`] trait implementation.
+///
+/// It is able to validate the rule in regard to `versionTime` DID log entry item
+/// (as defined by https://confluence.bit.admin.ch/display/EIDTEAM/DID+Log+Conformity+Check).
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidVersionTimeKeyword;
 
 impl DidVersionTimeKeyword {
     /// Required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
     pub const KEYWORD_NAME: &'static str = "did-version-time";
 
-    #[allow(clippy::result_large_err)] // "the `Err`-variant is at least 224 bytes" (default: 128)
     /// Required to register this custom keyword validator using `jsonschema::ValidationOptions::with_keyword`.
+    #[inline]
+    #[expect(clippy::result_large_err, reason = "..")] // "the `Err`-variant is at least 224 bytes" (default: 128)
+    #[expect(clippy::single_char_lifetime_names, reason = "..")]
     pub fn factory<'a>(
         _parent: &'a Map<String, Value>,
         value: &'a Value,
@@ -132,7 +144,7 @@ impl DidVersionTimeKeyword {
             .as_bool()
             .is_some_and(|_| path.to_string().ends_with(Self::KEYWORD_NAME))
         {
-            Ok(Box::new(DidVersionTimeKeyword))
+            Ok(Box::new(Self))
         } else {
             Err(ValidationError::custom(
                 Location::new(),
@@ -148,6 +160,9 @@ impl Keyword for DidVersionTimeKeyword {
     /// Validate instance according to a custom specification i.e. a `versionTime` string representation qualifies as "valid" if:
     /// 1. is valid datetime in `ISO8601` format
     /// 2. is (as datetime) before the current time
+    #[inline]
+    #[expect(clippy::single_char_lifetime_names, reason = "for the sake of brevity")]
+    #[expect(clippy::pattern_type_mismatch, reason = "..")]
     fn validate<'i>(
         &self,
         instance: &'i Value,
@@ -159,14 +174,14 @@ impl Keyword for DidVersionTimeKeyword {
             // 2. datetime is before the current time
 
             match DateTime::parse_from_rfc3339(dt) {
-                Ok(dt) => {
+                Ok(parsed_dt) => {
                     let now = Local::now();
-                    if dt.ge(&now) {
+                    if parsed_dt.ge(&now) {
                         return Err(ValidationError::custom(
                             Location::new(),
                             location.into(),
                             instance,
-                            format! {"`versionTime` '{dt}' must be before the current datetime '{now}'"},
+                            format!("`versionTime` '{parsed_dt}' must be before the current datetime '{now}'"),
                         ));
                     }
                     Ok(())
@@ -193,15 +208,21 @@ impl Keyword for DidVersionTimeKeyword {
     /// A `versionTime` string representation qualifies as "valid" if:
     /// 1. is valid datetime in `ISO8601` format
     /// 2. is (as datetime) before the current time
+    #[inline]
     fn is_valid(&self, instance: &Value) -> bool {
-        instance.as_str().is_some_and(|s| {
-            DateTime::parse_from_rfc3339(s)
+        instance.as_str().is_some_and(|str| {
+            DateTime::parse_from_rfc3339(str)
                 .is_ok_and(|dt| dt.cmp(&Local::now().fixed_offset()) == Ordering::Less)
         })
     }
 }
 
 #[cfg(test)]
+#[expect(clippy::shadow_unrelated, reason = "..")]
+#[expect(
+    clippy::unwrap_used,
+    reason = "unwrap calls are panic-safe as long as test case setup is correct"
+)]
 mod test {
     use crate::custom_jsonschema_keywords::*;
     use jsonschema::options as jsch_opts;
@@ -302,17 +323,15 @@ mod test {
     #[case("2012-12-12", false)]
     #[case("12:12:12", false)]
     #[case("anything but datetime", false)]
-    fn test_did_version_time_keyword_validate(
-        #[case] instance: String,
-        #[case] expected: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_did_version_time_keyword_validate(#[case] instance: String, #[case] expected: bool) {
         let schema = json!({DidVersionTimeKeyword::KEYWORD_NAME: true, "type": "string"});
 
         let validator = jsch_opts()
             .with_keyword(DidVersionTimeKeyword::KEYWORD_NAME, |_, _, _| {
                 Ok(Box::new(DidVersionTimeKeyword))
             }) // using closure
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap();
 
         let instance_value = json!(instance);
         let validate = validator.validate(&instance_value);
@@ -325,7 +344,8 @@ mod test {
             .with_keyword(DidVersionTimeKeyword::KEYWORD_NAME, |_, _, _| {
                 Ok(Box::new(DidVersionTimeKeyword))
             }) // using closure
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap();
 
         let instance_value = json!(instance);
         let validate = validator.validate(&instance_value);
@@ -333,8 +353,6 @@ mod test {
         // should always fail since "type" is wrong ("integer" instead of "string")
         assert!(validate.is_err());
         assert!(validate.err().is_some());
-
-        Ok(())
     }
 
     #[rstest]
@@ -346,17 +364,15 @@ mod test {
     #[case("2012-12-12", false)]
     #[case("12:12:12", false)]
     #[case("anything but datetime", false)]
-    fn test_did_version_time_keyword_is_valid(
-        #[case] instance: String,
-        #[case] expected: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_did_version_time_keyword_is_valid(#[case] instance: String, #[case] expected: bool) {
         let schema = json!({DidVersionTimeKeyword::KEYWORD_NAME: true, "type": "string"});
 
         let validator = jsch_opts()
             .with_keyword(DidVersionTimeKeyword::KEYWORD_NAME, |_, _, _| {
                 Ok(Box::new(DidVersionTimeKeyword))
             }) // using closure
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap();
 
         assert_eq!(expected, validator.is_valid(&json!(instance)));
 
@@ -367,7 +383,8 @@ mod test {
                 DidVersionTimeKeyword::KEYWORD_NAME,
                 DidVersionTimeKeyword::factory,
             ) // using factory
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap();
 
         assert_eq!(expected, validator.is_valid(&json!(instance)));
 
@@ -380,11 +397,10 @@ mod test {
                 DidVersionTimeKeyword::KEYWORD_NAME,
                 DidVersionTimeKeyword::factory,
             ) // using factory
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap();
 
         // should always fail since "type" is wrong ("integer" instead of "string")
-        assert_eq!(false, validator.is_valid(&json!(instance)));
-
-        Ok(())
+        assert!(!validator.is_valid(&json!(instance)));
     }
 }
