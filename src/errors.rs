@@ -38,7 +38,7 @@ pub enum DidSidekicksError {
 impl DidSidekicksError {
     /// Returns the error kind.
     #[inline]
-    pub fn kind(&self) -> DidSidekicksErrorKind {
+    pub const fn kind(&self) -> DidSidekicksErrorKind {
         match *self {
             Self::SerializationFailed(_) => DidSidekicksErrorKind::SerializationFailed,
             Self::DeserializationFailed(_) => DidSidekicksErrorKind::DeserializationFailed,
@@ -72,7 +72,7 @@ pub enum DidSidekicksErrorKind {
 /// The error accompanying [`DidResolver`] trait.
 ///
 /// Yet another UniFFI-compliant error.
-#[derive(Debug, thiserror::Error, PartialEq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[expect(
     clippy::exhaustive_enums,
     reason = "further enum variants may be added in the future"
@@ -102,7 +102,7 @@ pub enum DidResolverError {
 impl DidResolverError {
     /// Returns the error kind.
     #[inline]
-    pub fn kind(&self) -> DidResolverErrorKind {
+    pub const fn kind(&self) -> DidResolverErrorKind {
         match *self {
             Self::InvalidMethodSpecificId(_) => DidResolverErrorKind::InvalidMethodSpecificId,
             Self::SerializationFailed(_) => DidResolverErrorKind::SerializationFailed,

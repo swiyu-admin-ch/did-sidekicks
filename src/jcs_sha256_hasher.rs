@@ -2,14 +2,14 @@
 
 use bs58::{encode as base58_encode, Alphabet as Alphabet58};
 use hex;
-use hex::ToHex;
+use hex::ToHex as _;
 //use serde::{Deserialize, Serialize};
 // CAUTION Beware that using the "serde_jcs" crate here may cause
 //         "not yet implemented: Handle number str (u128/i128)" error
 //         in case of numeric json properties, e.g. "witnessThreshold".
 use serde_json::error::Error as JsonError;
 use serde_json_canonicalizer::to_string as jcs_to_string;
-use sha2::{Digest, Sha256};
+use sha2::{Digest as _, Sha256};
 
 /// A helper capable of SHA2-256 hashing of canonical JSON structures.
 //#[derive(Default, Clone)]
@@ -24,6 +24,7 @@ impl JcsSha256Hasher {
     ///
     /// Serialization can fail if `T`'s implementation of `Serialize` decides to
     /// fail, or if `T` contains a map with non-string keys.
+    #[inline]
     pub fn encode_hex(&mut self, json: &serde_json::Value) -> Result<String, JsonError> {
         self.hasher.reset();
         let jcs_string = jcs_to_string(json)?;
@@ -33,9 +34,16 @@ impl JcsSha256Hasher {
 
     /// Implementation of the multihash specification (https://www.w3.org/TR/controller-document/#multihash).
     /// Its output is a hash of the input using the associated <hash algorithm>, prefixed with a hash algorithm identifier and the hash size.
-    pub fn encode_multihash(&mut self, s: String) -> Vec<u8> {
+    #[inline]
+    #[expect(
+        clippy::unseparated_literal_suffix,
+        reason = "to prevent clippy::separated_literal_suffix warning"
+    )]
+    //#[expect(clippy::separated_literal_suffix, reason = "to prevent clippy::unseparated_literal_suffix warning")]
+    #[expect(clippy::as_conversions, reason = "..")]
+    pub fn encode_multihash(&mut self, str: String) -> Vec<u8> {
         self.hasher.reset();
-        self.hasher.update(s);
+        self.hasher.update(str);
         let digest = self.hasher.clone().finalize();
 
         // According to https://identity.foundation/trustdidweb/v0.3/#didtdw-version-changelog:
@@ -56,6 +64,7 @@ impl JcsSha256Hasher {
 
     /// Serialize the given data structure as a JCS UTF-8 string and calculate SHA2-256 multihash out of it.
     /// The multihash encoded in base58btc format is returned
+    #[inline]
     pub fn base58btc_encode_multihash(
         &mut self,
         json: &serde_json::Value,
@@ -80,9 +89,28 @@ impl JcsSha256Hasher {
 
 /// The default constructor featuring a SHA2-256 hasher instance.
 impl Default for JcsSha256Hasher {
+    #[inline]
     fn default() -> Self {
-        JcsSha256Hasher {
+        Self {
             hasher: Sha256::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use hex::encode as hex_encode;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(
+        // Example taken from https://multiformats.io/multihash/#sha2-256---256-bits-aka-sha256
+        "Merkle\u{2013}Damg\u{e5}rd", // "Merkle–Damgård",
+        "122041dd7b6443542e75701aa98a0c235951a28a0d851b11564d20022ab11d2589a8"
+    )]
+    fn test_encode_multihash_sha256(#[case] input: String, #[case] expected: String) {
+        let hash = hex_encode(JcsSha256Hasher::default().encode_multihash(input));
+        assert_eq!(hash, expected);
     }
 }
