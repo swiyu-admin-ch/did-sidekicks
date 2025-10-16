@@ -244,8 +244,8 @@ mod test {
             .build(&schema);
 
         assert!(validator.is_err());
-        assert!(validator.err().is_some_and(|t| {
-            t.to_string()
+        assert!(validator.err().is_some_and(|err| {
+            err.to_string()
                 .contains("The 'did-log-entry' keyword must be set to true")
         }));
     }
@@ -258,10 +258,7 @@ mod test {
     #[case(json!(["","",{},{},[{}]]), false)] // all empty
     #[case(json!(["","","","",""]), false)] // all JSON strings
     #[case(json!([]), false)] // empty array
-    fn test_did_log_entry_keyword_validate(
-        #[case] instance: Value,
-        #[case] expected: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn test_did_log_entry_keyword_validate(#[case] instance: Value, #[case] expected: bool) {
         let schema = json!({DidLogEntryKeyword::KEYWORD_NAME: true, "type": "array"});
 
         let validator = jsch_opts()
@@ -269,7 +266,8 @@ mod test {
                 DidLogEntryKeyword::KEYWORD_NAME,
                 DidLogEntryKeyword::factory,
             ) // using factory
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap(); // panic-safe
 
         let validate = validator.validate(&instance);
 
@@ -282,15 +280,14 @@ mod test {
                 DidLogEntryKeyword::KEYWORD_NAME,
                 DidLogEntryKeyword::factory,
             ) // using factory
-            .build(&schema)?;
+            .build(&schema)
+            .unwrap(); // panic-safe
 
         let validate = validator.validate(&instance);
 
         // should always fail since "type" is wrong ("integer" instead of "array")
         assert!(validate.is_err());
         assert!(validate.err().is_some());
-
-        Ok(())
     }
 
     #[rstest]
@@ -308,8 +305,8 @@ mod test {
             .build(&schema);
 
         assert!(validator.is_err());
-        assert!(validator.err().is_some_and(|t| {
-            t.to_string()
+        assert!(validator.err().is_some_and(|err| {
+            err.to_string()
                 .contains("The 'did-version-time' keyword must be set to true")
         }));
     }

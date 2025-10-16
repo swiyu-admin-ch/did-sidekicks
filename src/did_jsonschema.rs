@@ -178,7 +178,7 @@ mod test {
     use rstest::rstest;
     use std::sync::Arc;
 
-    struct EmptyDidLogEntryJsonSchemaImpl {}
+    struct EmptyDidLogEntryJsonSchemaImpl;
     impl DidLogEntryJsonSchema for EmptyDidLogEntryJsonSchemaImpl {
         fn get_json_schema(&self) -> String {
             "".to_owned()

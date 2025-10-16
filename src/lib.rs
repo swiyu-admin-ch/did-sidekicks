@@ -64,9 +64,9 @@ mod test {
         error_contains: &str,
     ) {
         assert!(res.is_err());
-        let err = res.err();
-        assert!(err.is_some());
-        let err = err.unwrap();
+        let err_opt = res.err();
+        assert!(err_opt.is_some());
+        let err = err_opt.unwrap();
         assert_eq!(err.kind(), expected_kind);
 
         let err_to_string = err.to_string();
@@ -241,7 +241,7 @@ mod test {
                 }
             }]
         }),
-        vec!("auth-key-01"),
+        vec!["auth-key-01"],
         DidSidekicksErrorKind::NonExistingKeyReferenced,
         "non-existing key referenced in the DID document"
     )]

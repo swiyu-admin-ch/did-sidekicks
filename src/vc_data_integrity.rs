@@ -515,13 +515,17 @@ impl VCDataIntegrity for EddsaJcs2022Cryptosuite {
     clippy::unwrap_used,
     reason = "unwrap calls are panic-safe as long as test case setup is correct"
 )]
+#[expect(
+    clippy::indexing_slicing,
+    reason = "panic-safe as long as test case setup is correct"
+)]
 mod test {
-    use crate::ed25519::{Ed25519SigningKey, Ed25519VerifyingKey, MultiBaseConverter};
+    use crate::ed25519::{Ed25519SigningKey, Ed25519VerifyingKey, MultiBaseConverter as _};
     use crate::errors::DidSidekicksErrorKind;
     use crate::jcs_sha256_hasher::JcsSha256Hasher;
     use crate::test::assert_error;
     use crate::vc_data_integrity::{
-        CryptoSuiteProofOptions, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity,
+        CryptoSuiteProofOptions, DataIntegrityProof, EddsaJcs2022Cryptosuite, VCDataIntegrity as _,
     };
     use chrono::DateTime;
     use rstest::rstest;
