@@ -85,6 +85,25 @@ impl JcsSha256Hasher {
             .into_string();
         Ok(encoded)
     }
+
+    /// This helper calculates the hash string as `base58btc(multihash(multikey))`, where:
+    /// - `multikey` is the multikey representation of a public key
+    /// - `multihash` is an implementation of the <a href="https://www.w3.org/TR/controller-document/#multihash">multihash</a> specification.
+    ///   Its output is a hash of the input using the associated `<hash algorithm>`
+    /// - `<hash algorithm>` is the hash algorithm used by the DID Controller.
+    ///   The hash algorithm MUST be one listed in the parameters defined by the version of a `did:*`
+    ///   (e.g. `did:webvh`) specification being used by the DID Controller
+    /// - `base58btc` is an implementation of the base58btc function (converts data to a `base58` encoding).
+    ///   Its output is the base58 encoded string of its input
+    ///
+    /// As such, the helper can be used out-of-the-box for the purpose of
+    /// <a href="https://identity.foundation/didwebvh/v1.0/#pre-rotation-key-hash-generation-and-verification">pre-rotation-key-hash-generation-and-verification</a>.
+    #[inline]
+    pub fn base58btc_encode_multihash_multikey(&mut self, multikey: &str) -> String {
+        base58_encode(self.encode_multihash(multikey.to_owned()))
+            .with_alphabet(Alphabet58::BITCOIN) // it is the default alphabet, but still (to ensure spec conformity)
+            .into_string()
+    }
 }
 
 /// The default constructor featuring a SHA2-256 hasher instance.
@@ -109,8 +128,44 @@ mod test {
         "Merkle\u{2013}Damg\u{e5}rd", // "Merkle–Damgård",
         "122041dd7b6443542e75701aa98a0c235951a28a0d851b11564d20022ab11d2589a8"
     )]
-    fn test_encode_multihash_sha256(#[case] input: String, #[case] expected: String) {
-        let hash = hex_encode(JcsSha256Hasher::default().encode_multihash(input));
+    fn test_encode_multihash(#[case] input: &str, #[case] expected: &str) {
+        let hash = hex_encode(JcsSha256Hasher::default().encode_multihash(input.to_owned()));
+        assert_eq!(hash, expected);
+    }
+
+    #[rstest]
+    #[case(
+        // Example taken from https://identity.foundation/didwebvh/v0.3/#log-file-for-version-2
+        "z82Lkvgj5NKYhoFh4hWzax9WicQaVDphN8MMzR3JZhontVfHaoGd9JbC4QRpDvmjQH3BLeQ",
+        "QmcbM5bppyT4yyaL35TQQJ2XdSrSNAhH5t6f4ZcuyR4VSv"
+    )]
+    #[case(
+        // Example taken from https://github.com/affinidi/affinidi-tdk-rs/blob/main/crates/affinidi-tdk/common/affinidi-secrets-resolver/src/secrets.rs#L456
+        "z6MkgfFvvWA7sw8WkNWyK3y74kwNVvWc7Qrs5tWnsnqMfLD3",
+        "QmY1kaguPMgjndEh1sdDZ8kdjX4Uc1SW4vziMfgWC6ndnJ"
+    )]
+    #[case(
+        // Example taken from https://raw.githubusercontent.com/decentralized-identity/didwebvh-rs/refs/heads/main/tests/test_vectors/pre-1_0-spec.jsonl
+        "z6Mkk7qfjoovyci2wpD1GZPvkngtWBjLr4bVdYeZfdWHDkEu",
+        "QmPyrGjbkwKPbDE33StNmA6v9uwNWB9NWgmxMiQ7tV1uJx"
+    )]
+    #[case(
+        // Example taken from https://raw.githubusercontent.com/decentralized-identity/didwebvh-rs/refs/heads/main/tests/test_vectors/pre-1_0-spec.jsonl
+        "z6MkmpTLDBwKi8qWC6J8jz4sGR9zn1oLTizNt6XbYxDEkFQS",
+        "QmWZg7NR5vyjxHFjNLzyUdpHKXFr6MWM7pQJE8wdKrDZwV"
+    )]
+    #[case(
+        // Example taken from https://raw.githubusercontent.com/decentralized-identity/didwebvh-rs/refs/heads/main/tests/test_vectors/revoked-did.jsonl
+        "z6Mkr7XVfuk77YmHG9WWX3rxhLRzK2z7oEia7D75fpZC6dzG",
+        "QmeLTcLUJ9A2TTHeWdo2xx6yd52E4aPrLoEDnmCbUEhYUi"
+    )]
+    #[case(
+        // Example taken from https://raw.githubusercontent.com/decentralized-identity/didwebvh-rs/refs/heads/main/tests/test_vectors/revoked-did.jsonl
+        "z6MkiwKu88uSsuNP5tYVvcaQSc7ZVpe1248zefnQXtbeHcxE",
+        "QmejLZab9j1DuA8fD5593XXGS2WXUgKsh3jYGY8ctaSdyC"
+    )]
+    fn test_base58btc_encode_multihash_multikey(#[case] multikey: &str, #[case] expected: &str) {
+        let hash = JcsSha256Hasher::default().base58btc_encode_multihash_multikey(multikey);
         assert_eq!(hash, expected);
     }
 }
