@@ -11,7 +11,11 @@ use serde_json::from_str as json_from_str;
 /// Represents any error condition that might occur in conjunction with [`DidLogEntryValidator`].
 ///
 /// Yet another UniFFI-compliant error.
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidLogEntryValidatorError {
     #[error("the supplied JSON instance is not a valid DID log: {0}")]
     ValidationError(String),
@@ -21,8 +25,9 @@ pub enum DidLogEntryValidatorError {
 
 impl DidLogEntryValidatorError {
     /// Returns the error kind.
-    pub fn kind(&self) -> DidLogEntryValidatorErrorKind {
-        match self {
+    #[inline]
+    pub const fn kind(&self) -> DidLogEntryValidatorErrorKind {
+        match *self {
             Self::ValidationError(_) => DidLogEntryValidatorErrorKind::ValidationError,
             Self::DeserializationError(_) => DidLogEntryValidatorErrorKind::DeserializationError,
         }
@@ -33,6 +38,10 @@ impl DidLogEntryValidatorError {
 ///
 /// Each [`DidLogEntryValidatorError`] variant has a kind provided by the [`DidLogEntryValidatorError::kind`] method.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum DidLogEntryValidatorErrorKind {
     ValidationError,
     DeserializationError,
@@ -65,19 +74,21 @@ impl DidLogEntryValidator {
     /// [`DidLogEntryValidatorError`] is returned as soon the very first validation error occurs.
     ///
     /// A UniFFI-compliant method.
+    #[inline]
     pub fn validate(&self, instance: String) -> Result<(), DidLogEntryValidatorError> {
         self.validate_str(&instance)
     }
 
     /// Validate `instance` against `schema` and return the first error if any.
+    #[inline]
     pub fn validate_str(&self, instance: &str) -> Result<(), DidLogEntryValidatorError> {
         match json_from_str(instance) {
             Ok(val) => match self.validator.validate(&val) {
                 Ok(_) => Ok(()),
-                Err(e) => Err(DidLogEntryValidatorError::ValidationError(e.to_string())),
+                Err(err) => Err(DidLogEntryValidatorError::ValidationError(err.to_string())),
             },
-            Err(e) => Err(DidLogEntryValidatorError::DeserializationError(
-                e.to_string(),
+            Err(err) => Err(DidLogEntryValidatorError::DeserializationError(
+                err.to_string(),
             )),
         }
     }
@@ -92,6 +103,7 @@ impl From<Arc<dyn DidLogEntryJsonSchema>> for DidLogEntryValidator {
     /// - [`DidVersionTimeKeyword`].
     ///
     /// A UniFFI-compliant constructor.
+    #[inline]
     fn from(schema: Arc<dyn DidLogEntryJsonSchema>) -> Self {
         Self::from(schema.get_json_schema().as_str())
     }
@@ -104,6 +116,7 @@ impl From<&dyn DidLogEntryJsonSchema> for DidLogEntryValidator {
     /// Relies heavily on custom [`jsonschema::Keyword`] trait implementation like:
     /// - [`DidLogEntryKeyword`] and
     /// - [`DidVersionTimeKeyword`].
+    #[inline]
     fn from(schema: &dyn DidLogEntryJsonSchema) -> Self {
         Self::from(schema.get_json_schema().as_str())
     }
@@ -118,11 +131,14 @@ impl From<String> for DidLogEntryValidator {
     /// - [`DidVersionTimeKeyword`].
     ///
     /// A UniFFI-compliant constructor.
+    #[inline]
     fn from(value: String) -> Self {
         Self::from(value.as_str())
     }
 }
 
+#[expect(clippy::fallible_impl_from, reason = "..")]
+#[expect(clippy::panic, reason = "..")]
 impl From<&str> for DidLogEntryValidator {
     /// Create a new JSON Schema validator using `JSON Schema Draft 2020-12` specifications
     /// and a schema supplied as `&str`.
@@ -130,10 +146,11 @@ impl From<&str> for DidLogEntryValidator {
     /// Relies heavily on custom [`jsonschema::Keyword`] trait implementation like:
     /// - [`DidLogEntryKeyword`] and
     /// - [`DidVersionTimeKeyword`].
+    #[inline]
     fn from(value: &str) -> Self {
         match json_from_str(value) {
             Ok(sch) => {
-                let _ = jsch_meta::validate(&sch).is_err_and(|e| panic!("{}", e.to_string()));
+                let _x = jsch_meta::validate(&sch).is_err_and(|err| panic!("{err}"));
                 match jsch_opts()
                     .with_draft(Draft::Draft202012)
                     .with_keyword(
@@ -146,11 +163,11 @@ impl From<&str> for DidLogEntryValidator {
                     )
                     .build(&sch)
                 {
-                    Ok(validator) => DidLogEntryValidator { validator },
-                    Err(e) => panic!("{}", e.to_string()),
+                    Ok(validator) => Self { validator },
+                    Err(err) => panic!("{err}"),
                 }
             }
-            Err(e) => panic!("{}", e.to_string()),
+            Err(err) => panic!("{err}"),
         }
     }
 }
@@ -161,10 +178,10 @@ mod test {
     use rstest::rstest;
     use std::sync::Arc;
 
-    struct EmptyDidLogEntryJsonSchemaImpl {}
+    struct EmptyDidLogEntryJsonSchemaImpl;
     impl DidLogEntryJsonSchema for EmptyDidLogEntryJsonSchemaImpl {
         fn get_json_schema(&self) -> String {
-            "".to_string()
+            "".to_owned()
         }
     }
 
@@ -172,13 +189,13 @@ mod test {
     #[should_panic(expected = "EOF while parsing a value at line 1 column 0")]
     fn test_create_validator_from_empty_schema_thread_safe() {
         let schema: Arc<dyn DidLogEntryJsonSchema> = Arc::new(EmptyDidLogEntryJsonSchemaImpl {});
-        let _ = DidLogEntryValidator::from(schema);
+        let _x = DidLogEntryValidator::from(schema);
     }
 
     #[rstest]
     #[should_panic(expected = "EOF while parsing a value at line 1 column 0")]
     fn test_create_validator_from_empty_schema() {
         let schema: &dyn DidLogEntryJsonSchema = &EmptyDidLogEntryJsonSchemaImpl {};
-        let _ = DidLogEntryValidator::from(schema);
+        let _x = DidLogEntryValidator::from(schema);
     }
 }

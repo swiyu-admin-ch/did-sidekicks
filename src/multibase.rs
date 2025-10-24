@@ -2,13 +2,17 @@
 
 use crate::errors::DidSidekicksError;
 use bs58::{decode as base58_decode, encode as base58_encode, Alphabet as Alphabet58};
-use std::cmp::PartialEq;
+use core::cmp::PartialEq;
 
 /// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
 pub const BASE58BTC_MULTIBASE_IDENTIFIER: &str = "z";
 
 /// See https://www.ietf.org/archive/id/draft-multiformats-multibase-08.html#appendix-D.1
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum MultibaseAlgorithm {
     /// Base58 bitcoin
     Base58btc,
@@ -23,14 +27,16 @@ pub struct MultibaseEncoderDecoder {
 
 impl MultibaseEncoderDecoder {
     /// The default constructor featuring Base58btc algorithm.
-    pub(crate) fn default() -> Self {
-        MultibaseEncoderDecoder {
+    pub(crate) const fn default() -> Self {
+        Self {
             algorithm: MultibaseAlgorithm::Base58btc,
             alphabet: Alphabet58::BITCOIN,
         }
     }
 
     /// Encode bytes into a new owned string using the alphabet supplied earlier.
+    #[inline]
+    #[expect(clippy::panic, reason = "sanity guard")]
     pub fn encode_base58btc(&self, data: &[u8]) -> String {
         // sanity guard
         if self.algorithm != MultibaseAlgorithm::Base58btc {
@@ -51,6 +57,9 @@ impl MultibaseEncoderDecoder {
     ///
     /// If the buffer is not resizeable bytes will be written from the beginning and bytes after
     /// the final encoded byte will not be touched.
+    #[inline]
+    #[expect(clippy::panic_in_result_fn, reason = "..")]
+    #[expect(clippy::panic, reason = "sanity guard")]
     pub fn decode_base58_onto(
         &self,
         multibase: &str,
@@ -68,12 +77,76 @@ impl MultibaseEncoderDecoder {
             )));
         }
 
-        let raw = multibase.chars().skip(1).collect::<String>(); // get rid of the multibase identifier
+        // get rid of the multibase identifier
+        let to_decode = multibase.chars().skip(1).collect::<String>();
 
         // decode into the given buffer
-        match base58_decode(raw).with_alphabet(self.alphabet).onto(result) {
+        match base58_decode(to_decode)
+            .with_alphabet(self.alphabet)
+            .onto(result)
+        {
             Ok(_) => Ok(()),
             Err(err) => Err(DidSidekicksError::DeserializationFailed(format!("{err}"))),
         }
+    }
+}
+
+#[cfg(test)]
+#[expect(
+    clippy::unwrap_used,
+    reason = "unwrap calls are panic-safe as long as test case setup is correct"
+)]
+mod test {
+    use super::*;
+    use crate::errors::*;
+    use rstest::rstest;
+    use std::vec;
+
+    #[rstest]
+    fn test_multibase_conversion() {
+        let multibase = MultibaseEncoderDecoder::default();
+        let encoded = multibase.encode_base58btc(b"helloworld"); // == "z6sBRWyteSSzHrs"
+
+        let mut buff = vec![0; 16];
+        multibase
+            .decode_base58_onto(encoded.as_str(), &mut buff)
+            .unwrap();
+        let decoded = String::from_utf8_lossy(&buff).to_string();
+        assert!(decoded.starts_with("helloworld"));
+        //assert_eq!(decoded, "helloworld");
+    }
+
+    #[rstest]
+    fn test_multibase_conversion_invalid_multibase() {
+        let multibase = MultibaseEncoderDecoder::default();
+        let encoded = multibase.encode_base58btc(b"helloworld"); // == "z6sBRWyteSSzHrs"
+
+        // Now, to induce error, just get rid of the multibase code (prefix char 'z')
+        let encoded_without_multibase = encoded.chars().skip(1).collect::<String>();
+        let mut buff = vec![0; 16];
+        let res = multibase.decode_base58_onto(encoded_without_multibase.as_str(), &mut buff);
+        assert!(res.is_err());
+        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
+        assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
+        assert!(err
+            .to_string()
+            .contains("Invalid multibase algorithm identifier 'Base58btc'"));
+    }
+
+    #[rstest]
+    fn test_multibase_conversion_buffer_too_small() {
+        let multibase = MultibaseEncoderDecoder::default();
+        let encoded = multibase.encode_base58btc(b"helloworld"); // == "z6sBRWyteSSzHrs"
+
+        // all it takes to reproduce the behaviour
+        let mut buff = vec![0; 8]; // empirical size for "helloworld" (encoded)
+
+        let res = multibase.decode_base58_onto(encoded.as_str(), &mut buff);
+        assert!(res.is_err());
+        let err = res.unwrap_err(); // panic-safe unwrap call (see the previous line)
+        assert_eq!(err.kind(), DidSidekicksErrorKind::DeserializationFailed);
+        assert!(err
+            .to_string()
+            .contains("buffer provided to decode base58 encoded string into was too small"));
     }
 }

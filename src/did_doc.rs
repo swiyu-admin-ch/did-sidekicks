@@ -13,6 +13,7 @@ use std::sync::Arc;
 // https://www.rfc-editor.org/rfc/rfc7517#section-4
 // https://www.rfc-editor.org/rfc/rfc7518.html#section-6.2.1
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct Jwk {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alg: Option<String>,
@@ -30,6 +31,7 @@ pub struct Jwk {
 
 // See https://www.w3.org/TR/did-core/#verification-methods
 #[derive(Serialize, Deserialize, Debug)]
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct VerificationMethod {
     pub id: String,
     // CAUTION The "controller" property must not be present w.r.t.:
@@ -50,7 +52,11 @@ pub struct VerificationMethod {
     pub public_key_jwk: Option<Jwk>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[expect(
+    clippy::exhaustive_enums,
+    reason = "further enum variants may be added in the future"
+)]
 pub enum VerificationType {
     Multikey,
     // https://w3c-ccg.github.io/lds-jws2020/#json-web-key-2020
@@ -59,27 +65,31 @@ pub enum VerificationType {
     Ed25519VerificationKey2020,
 }
 
-impl std::fmt::Display for VerificationType {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let string_representation = match self {
-            VerificationType::Multikey => String::from("Multikey"),
-            VerificationType::JsonWebKey2020 => String::from("JsonWebKey2020"),
-            VerificationType::Ed25519VerificationKey2020 => {
-                String::from("Ed25519VerificationKey2020")
-            }
+impl core::fmt::Display for VerificationType {
+    #[inline]
+    #[expect(
+        clippy::min_ident_chars,
+        reason = "default name of function parameter of trait impl. used to prevent clippy::renamed_function_params warning"
+    )]
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let string_representation = match *self {
+            Self::Multikey => String::from("Multikey"),
+            Self::JsonWebKey2020 => String::from("JsonWebKey2020"),
+            Self::Ed25519VerificationKey2020 => String::from("Ed25519VerificationKey2020"),
         };
         write!(f, "{string_representation}")
     }
 }
 
 impl VerificationMethod {
-    pub fn new(
+    #[inline]
+    pub const fn new(
         id: String,
         controller: String,
         public_key_multibase: String,
         verification_type: VerificationType,
     ) -> Self {
-        VerificationMethod {
+        Self {
             id,
             controller,
             verification_type,
@@ -88,9 +98,15 @@ impl VerificationMethod {
         }
     }
 }
+
+#[expect(
+    clippy::missing_trait_methods,
+    reason = "not all trait methods required and implemented to prevent error[E0599]: the method `clone` exists for struct `Vec<did_doc::VerificationMethod>`, but its trait bounds were not satisfied"
+)]
 impl Clone for VerificationMethod {
+    #[inline]
     fn clone(&self) -> Self {
-        VerificationMethod {
+        Self {
             id: self.id.clone(),
             controller: self.controller.clone(),
             verification_type: self.verification_type.clone(),
@@ -104,6 +120,7 @@ impl Clone for VerificationMethod {
 // Examples https://www.w3.org/TR/did-core/#did-documents
 // According to https://www.w3.org/TR/did-core/#did-document-properties
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDoc {
     #[serde(rename = "@context")]
     pub context: Vec<String>,
@@ -150,6 +167,7 @@ pub struct DidDoc {
 // Examples https://www.w3.org/TR/did-core/#did-documents
 // According to https://www.w3.org/TR/did-core/#did-document-properties
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[expect(clippy::exhaustive_structs, reason = "..")]
 pub struct DidDocNormalized {
     #[serde(rename = "@context")]
     pub context: Vec<String>,
@@ -199,11 +217,12 @@ pub struct DidDocNormalized {
 }
 
 impl DidDocNormalized {
+    #[inline]
     pub fn to_did_doc(&self) -> Result<DidDoc, DidSidekicksError> {
-        let controller = match self.controller.clone() {
-            None => vec![],
-            Some(c) => vec![c],
-        };
+        let controller = self
+            .controller
+            .clone()
+            .map_or_else(Vec::new, |ctrl| vec![ctrl]);
 
         let mut did_doc = DidDoc {
             context: self.context.clone(), // vec![],
@@ -221,7 +240,7 @@ impl DidDocNormalized {
         if !self.authentication.is_empty() {
             did_doc.authentication = vec![];
             self.authentication.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
-                match self.verification_method.iter().find(|m| m.id == *id) {
+                match self.verification_method.iter().find(|meth| meth.id == *id) {
                     Some(obj) => {
                         did_doc.authentication.push(obj.clone());
                         Ok(())
@@ -233,7 +252,7 @@ impl DidDocNormalized {
         if !self.capability_invocation.is_empty() {
             did_doc.capability_invocation = vec![];
             self.capability_invocation.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
-                match self.verification_method.iter().find(|m| m.id == *id) {
+                match self.verification_method.iter().find(|meth| meth.id == *id) {
                     Some(obj) => {
                         did_doc.capability_invocation.push(obj.clone());
                         Ok(())
@@ -245,7 +264,7 @@ impl DidDocNormalized {
         if !self.capability_delegation.is_empty() {
             did_doc.capability_delegation = vec![];
             self.capability_delegation.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
-                match self.verification_method.iter().find(|m| m.id == *id) {
+                match self.verification_method.iter().find(|meth| meth.id == *id) {
                     Some(obj) => {
                         did_doc.capability_delegation.push(obj.clone());
                         Ok(())
@@ -257,7 +276,7 @@ impl DidDocNormalized {
         if !self.assertion_method.is_empty() {
             did_doc.assertion_method = vec![];
             self.assertion_method.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
-                match self.verification_method.iter().find(|m| m.id == *id)
+                match self.verification_method.iter().find(|meth| meth.id == *id)
                 {
                     Some(obj) => {
                         did_doc.assertion_method.push(obj.clone());
@@ -270,7 +289,7 @@ impl DidDocNormalized {
         if !self.key_agreement.is_empty() {
             did_doc.key_agreement = vec![];
             self.key_agreement.iter().try_for_each(|id| -> Result<(), DidSidekicksError> {
-                match self.verification_method.iter().find(|m| m.id == *id) {
+                match self.verification_method.iter().find(|meth| meth.id == *id) {
                     Some(obj) => {
                         did_doc.key_agreement.push(obj.clone());
                         Ok(())
@@ -291,44 +310,54 @@ pub struct DidDocExtended {
 }
 
 impl DidDoc {
+    #[inline]
     pub fn get_context(&self) -> Vec<String> {
         self.context.clone()
     }
 
+    #[inline]
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
 
+    #[inline]
     pub fn get_verification_method(&self) -> Vec<VerificationMethod> {
         self.verification_method.clone()
     }
 
+    #[inline]
     pub fn get_authentication(&self) -> Vec<VerificationMethod> {
         self.authentication.clone()
     }
 
+    #[inline]
     pub fn get_capability_invocation(&self) -> Vec<VerificationMethod> {
         self.capability_invocation.clone()
     }
 
+    #[inline]
     pub fn get_capability_delegation(&self) -> Vec<VerificationMethod> {
         self.capability_delegation.clone()
     }
 
+    #[inline]
     pub fn get_assertion_method(&self) -> Vec<VerificationMethod> {
         self.assertion_method.clone()
     }
 
+    #[inline]
     pub fn get_controller(&self) -> Vec<String> {
         self.controller.clone()
     }
 
+    #[inline]
     pub fn get_deactivated(&self) -> bool {
         self.deactivated.unwrap_or(false)
     }
 
+    #[inline]
     pub fn from_json(json_content: &str) -> Result<Self, DidSidekicksError> {
-        let did_doc: DidDoc = match serde_json::from_str(json_content) {
+        let did_doc: Self = match serde_json::from_str(json_content) {
             Ok(did_doc) => did_doc,
             Err(err) => {
                 return Err(DidSidekicksError::DeserializationFailed(format!(
@@ -336,72 +365,76 @@ impl DidDoc {
                 )));
             }
         };
+
         Ok(did_doc)
     }
 
-    /* TODO remove as unused
-    pub fn normalize(&self) -> DidDocNormalized {
-        let controller: Option<String> = match self.controller.first() {
-            Some(controller) => Some(controller.clone()),
-            None => None,
-        };
-
-        let mut did_doc_norm = DidDocNormalized {
-            context: self.context.clone(), // vec![],
-            id: self.id.clone(),
-            verification_method: self.verification_method.clone(),
-            authentication: vec![],
-            capability_invocation: vec![],
-            capability_delegation: vec![],
-            assertion_method: vec![],
-            key_agreement: vec![],
-            //controller: self.controller.clone(),
-            controller,
-            deactivated: self.deactivated,
-        };
-        if !self.authentication.is_empty() {
-            did_doc_norm.authentication = self
-                .authentication
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
+    /// Returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+    ///
+    /// The key lookup is always done across all verification methods (`verificationMethod`) and
+    /// verification relationships
+    /// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+    ///
+    /// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+    #[inline]
+    pub fn get_key(&self, key_id: String) -> Result<Jwk, DidSidekicksError> {
+        // A JWK referenced by the supplied key_id might be anywhere in this DID doc
+        match self
+            .verification_method
+            .iter()
+            .chain(self.authentication.iter())
+            .chain(self.capability_invocation.iter())
+            .chain(self.capability_delegation.iter())
+            .chain(self.assertion_method.iter())
+            .chain(self.key_agreement.iter())
+            .find(|&key| key.id.ends_with(format!("#{}", key_id).as_str()))
+        {
+            Some(key) => match key.public_key_jwk.to_owned() {
+                Some(jwk) => match jwk.kid.to_owned() {
+                    Some(kid) => {
+                        if kid.as_str() == key_id {
+                            return Ok(jwk);
+                        }
+                        Err(DidSidekicksError::NonExistingKeyReferenced(kid))
+                    }
+                    None => Ok(jwk),
+                },
+                None => Err(DidSidekicksError::NonExistingKeyReferenced(key_id)),
+            },
+            None => Err(DidSidekicksError::KeyNotFound(key_id)),
         }
-        if !self.capability_invocation.is_empty() {
-            did_doc_norm.capability_invocation = self
-                .capability_invocation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.capability_delegation.is_empty() {
-            did_doc_norm.capability_delegation = self
-                .capability_delegation
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.assertion_method.is_empty() {
-            did_doc_norm.assertion_method = self
-                .assertion_method
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        if !self.key_agreement.is_empty() {
-            did_doc_norm.key_agreement = self
-                .key_agreement
-                .iter()
-                .map(|vm: &VerificationMethod| vm.id.clone())
-                .collect::<Vec<String>>();
-        }
-        did_doc_norm
     }
-     */
+}
+
+/// The helper parses the supplied DID doc as string and returns a cryptographic public key ([`Jwk`]) referenced by the supplied `key_id`, if any.
+///
+/// Parsing failure is denoted by returning [`DidSidekicksError::DeserializationFailed`].
+///
+/// The key lookup is always done across all verification methods (`verificationMethod`) and
+/// verification relationships
+/// (`authentication`, `assertionMethod`, `keyAgreement`, `capabilityInvocation`, `capabilityInvocation`).
+///
+/// If no such key exists, [`DidSidekicksError::KeyNotFound`] is returned.
+#[inline]
+pub fn get_key_from_did_doc(did_doc: String, key_id: String) -> Result<Jwk, DidSidekicksError> {
+    let doc = match serde_json::from_str::<DidDocNormalized>(did_doc.as_str()) {
+        Ok(doc_norm) => match doc_norm.to_did_doc() {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+        Err(_) => match serde_json::from_str::<DidDoc>(did_doc.as_str()) {
+            Ok(doc) => doc,
+            Err(err) => return Err(DidSidekicksError::DeserializationFailed(err.to_string())),
+        },
+    };
+
+    doc.get_key(key_id)
 }
 
 impl DidDocExtended {
     /// The only non-empty constructor of the type.
-    pub fn new(
+    #[inline]
+    pub const fn new(
         did_doc: DidDoc,
         did_method_parameters: HashMap<String, Arc<DidMethodParameter>>,
     ) -> Self {
@@ -411,16 +444,19 @@ impl DidDocExtended {
         }
     }
 
+    #[inline]
     pub fn get_did_doc_obj(&self) -> DidDoc {
         self.did_doc.clone()
     }
 
     /// A UniFFI-compliant version of [`DidDocExtended::get_did_doc_obj`] getter.
+    #[inline]
     pub fn get_did_doc(&self) -> Arc<DidDoc> {
         Arc::new(self.get_did_doc_obj())
     }
 
     /// A UniFFI-compliant getter.
+    #[inline]
     pub fn get_did_method_parameters(&self) -> HashMap<String, Arc<DidMethodParameter>> {
         self.did_method_parameters.clone()
     }
