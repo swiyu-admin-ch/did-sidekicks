@@ -1,6 +1,6 @@
 ![Public Beta banner](https://github.com/swiyu-admin-ch/swiyu-admin-ch.github.io/blob/main/assets/images/github-banner.jpg)
 
-# DID sidekicks
+# DID sidekicks - DEPRECATED
 
 [![Build and test](https://github.com/swiyu-admin-ch/did-sidekicks/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/swiyu-admin-ch/did-sidekicks/actions/workflows/build-and-test.yml)
 [![CodeQL Analysis](https://github.com/swiyu-admin-ch/did-sidekicks/actions/workflows/codeql-analyze.yml/badge.svg)](https://github.com/swiyu-admin-ch/did-sidekicks/actions/workflows/codeql-analyze.yml)
